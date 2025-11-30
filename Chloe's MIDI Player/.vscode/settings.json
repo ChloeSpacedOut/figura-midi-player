@@ -1,0 +1,12 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": ["**/avatar.json"],
+      "url": ".vscode/avatar.schema.json"
+    }
+  ],
+  "[lua]": {
+    "editor.suggest.showDeprecated": false
+  },
+  "figura.librariesFolderPath": "C:\\Users\\ChloeSpacedOut\\AppData\\Roaming\\.minecraft\\figura\\avatars\\libraries\\"
+}
