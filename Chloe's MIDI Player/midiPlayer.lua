@@ -1,7 +1,81 @@
-local midPlayer = {
+local midiPlayer = {
     directory = "ChloesMidiPlayer",
-    songs = {}
+    songs = {},
+    activeSong = nil,
+    channels = {
+        [0] = {},
+        [1] = {},
+        [2] = {},
+        [3] = {},
+        [4] = {},
+        [5] = {},
+        [6] = {},
+        [7] = {},
+        [8] = {},
+        [9] = {},
+        [10] = {},
+        [11] = {},
+        [12] = {},
+        [13] = {},
+        [14] = {},
+        [15] = {}
+    },
+    soundTree = {}
 }
+
+-- generate soundTree
+for _,soundString in pairs(sounds:getCustomSounds()) do
+    if string.sub(soundString,1,7) == "samples" then
+        local index,type,note
+        local depth = 1
+        for string in string.gmatch(soundString,"([^.]*)") do
+            if depth == 2 then
+                index = string
+            elseif depth == 4 then
+                type = string
+            elseif depth == 5 then
+                note = string
+            end
+            depth = depth + 1
+        end
+        if note and (type == "Sustain" or type == "Main") then
+            if not midiPlayer.soundTree[tonumber(index)] then
+                midiPlayer.soundTree[tonumber(index)] = {}
+            end
+            if not midiPlayer.soundTree[tonumber(index)][type] then
+                midiPlayer.soundTree[tonumber(index)][type] = {}
+            end
+            if not midiPlayer.soundTree[tonumber(index)][type].notes then
+                midiPlayer.soundTree[tonumber(index)][type].notes = {}
+            end
+            table.insert(midiPlayer.soundTree[tonumber(index)][type].notes,tonumber(note))
+        end
+    end
+end
+
+-- bake pitches
+for _,sound in pairs(midiPlayer.soundTree) do
+    for _,type in pairs(sound) do
+        table.sort(type.notes,function(a, b)
+            return a < b
+        end)
+        local currentSample = 1
+        for k = 0, 127 do
+            local currentSamplePitch = type.notes[currentSample]
+            local nextSamplePitch = type.notes[currentSample + 1]
+            local maxPitch
+            if nextSamplePitch then
+                maxPitch = math.ceil((currentSamplePitch + nextSamplePitch)/2)
+            else
+                maxPitch = 127
+            end
+            type[k] = 2^((k - currentSamplePitch)/12)
+            if k >= maxPitch then
+                currentSample = currentSample + 1
+            end
+        end
+    end
+end
 
 local song = {}
 song.__index = song
@@ -9,16 +83,84 @@ song.__index = song
 local chunk = {}
 chunk.__index = chunk
 
+local note = {}
+note.__index = note
+
 function song:new()
     self = setmetatable({},song)
     self.chunks = {}
+    self.state = "STOPPED"
+    self.activeTrack = 1 -- only used for format 2
+    return self
+end
+
+function song:play()
+    self.state = "PLAYING"
+    midiPlayer.activeSong = self.ID
+    local sysTime = client.getSystemTime()
+    for k,v in pairs(self.chunks) do
+        v.sequenceIndex = 1
+        v.lastEventTime = sysTime
+    end
+    return self
+end
+
+function song:stop()
+    midiPlayer.activeSong = nil
+    self.state = "STOPPED"
     return self
 end
 
 function chunk:new()
     self = setmetatable({},chunk)
+    self.sequenceIndex = 1
+    self.lastEventTime = 0
     self.sequence = {}
     return self
+end
+
+function note:new(pitch,velocity,initTime)
+    self = setmetatable({},note)
+    self.pitch = pitch
+    --log(self.pitch)
+    self.velocity = velocity
+    self.initTime = initTime
+    self.sound = sounds:playSound("samples.001. Acoustic Grand Piano.Main.64",player:getPos(),1,midiPlayer.soundTree[1]["Main"][pitch])
+    return self
+end
+
+local midiEvents = {
+    noteOn = function(eventData,sysTime,activeChunk,activeSong)
+        midiPlayer.channels[eventData.channel][eventData.key] = note:new(eventData.key,eventData.velocity,sysTime)
+        --log(midiPlayer.channels[eventData.channel][eventData.key])
+    end,
+    noteOff = function(eventData,sysTime,activeChunk,activeSong)
+        --log(eventData)
+    end,
+    endOfTrack = function(eventData,sysTime,activeChunk,activeSong)
+        activeSong:stop()
+    end
+
+}
+
+function events.render(delta)
+    local sysTime = client.getSystemTime()
+    local activeSong = midiPlayer.songs[midiPlayer.activeSong]
+    if activeSong and activeSong.state == "PLAYING" then
+        for _, activeChunk in pairs(activeSong.chunks) do repeat
+           for i = activeChunk.sequenceIndex, #activeChunk.sequence do 
+                if (sysTime - activeChunk.lastEventTime) >= (activeChunk.sequence[i].deltaTime * 10) then
+                    local typeFunction = midiEvents[activeChunk.sequence[i].type]
+                    if typeFunction then
+                        typeFunction(activeChunk.sequence[i],sysTime,activeChunk,activeSong)
+                    end
+                else
+                    activeChunk.sequenceIndex = i
+                    break
+                end
+             end
+        until true end
+    end
 end
 
 local function fast_read_byte_array(path)
@@ -279,7 +421,7 @@ local function readMidi(midiSong,midiData)
                     if voiceMessages[statusByte] then
                         voiceMessages[statusByte](buffer,currentChunk,deltaTime,nextBits)
                     else
-                        log(nextByte)
+                        --log(nextByte)
                     end
                 end
             end
@@ -295,24 +437,27 @@ local function readMidi(midiSong,midiData)
     lastBufferPos = buffer:getPosition()
 
     buffer:close()
-    logTable(midiSong,4)
+    --logTable(midiSong,4)
 end
 
 local function getMidiData()
-    if not file:isDirectory(midPlayer.directory) then
-        file:mkdir(midPlayer.directory)
+    if not file:isDirectory(midiPlayer.directory) then
+        file:mkdir(midiPlayer.directory)
         log('"ChloesMidiPlayer" folder has been created')
     end
-    for k,fileName in pairs(file:list(midPlayer.directory)) do
-        local path = midPlayer.directory.."/"..fileName
+    for k,fileName in pairs(file:list(midiPlayer.directory)) do
+        local path = midiPlayer.directory.."/"..fileName
         local suffix = string.sub(fileName,-4,-1)
         local name = string.sub(fileName,1,-5)
-        if suffix == ".mid" and (not midPlayer.songs[name]) then
-            midPlayer.songs[name] = song:new()
+        if suffix == ".mid" and (not midiPlayer.songs[name]) then
+            midiPlayer.songs[name] = song:new()
+            midiPlayer.songs[name].ID = name
             local midiData = fast_read_byte_array(path)
-            readMidi(midPlayer.songs[name],midiData)
+            readMidi(midiPlayer.songs[name],midiData)
         end
     end
 end
 
 getMidiData()
+
+return midiPlayer
