@@ -20,9 +20,34 @@ local midiPlayer = {
         [14] = {},
         [15] = {}
     },
-    soundTree = {}
+    soundTree = {},
+    soundDuration = {}
 }
 
+
+local function getOggDuration(soundID)
+    local ogg_bytes = ""
+    for k,v in pairs(avatar:getNBT().sounds[soundID]) do
+        ogg_bytes = ogg_bytes .. string.char(v % 128)
+    end
+
+    local vorbis_pos = ogg_bytes:find("vorbis", 1, true)
+
+    local r1, r2, r3, r4 = ogg_bytes:byte(vorbis_pos + 11, vorbis_pos + 14)
+    local rate = r1 + r2 * 256 + r3 * 65536 + r4 * 16777216
+
+    local last_oggs = 1
+    for pos in ogg_bytes:gmatch("()OggS") do
+        last_oggs = pos
+    end
+
+    local b1, b2, b3, b4, b5, b6, b7, b8 = ogg_bytes:byte(last_oggs + 6, last_oggs + 13)
+    local low = b1 + b2 * 256 + b3 * 65536 + b4 * 16777216
+    local high = b5 + b6 * 256 + b7 * 65536 + b8 * 16777216
+    local granule_pos = low + high * 4294967296
+
+    return (granule_pos * 1000) / rate
+end
 -- generate soundTree
 for _,soundString in pairs(sounds:getCustomSounds()) do
     if string.sub(soundString,1,7) == "samples" then
@@ -69,7 +94,7 @@ for _,sound in pairs(midiPlayer.soundTree) do
             else
                 maxPitch = 127
             end
-            type[k] = 2^((k - currentSamplePitch)/12)
+            type[k] = {sample = currentSamplePitch, pitch = 2^((k - currentSamplePitch)/12)}
             if k >= maxPitch then
                 currentSample = currentSample + 1
             end
@@ -119,23 +144,49 @@ function chunk:new()
     return self
 end
 
-function note:new(pitch,velocity,initTime)
+function note:new(pitch,velocity,channel,sysTime)
     self = setmetatable({},note)
     self.pitch = pitch
-    --log(self.pitch)
     self.velocity = velocity
-    self.initTime = initTime
-    self.sound = sounds:playSound("samples.001. Acoustic Grand Piano.Main.64",player:getPos(),1,midiPlayer.soundTree[1]["Main"][pitch])
+    self.channel = channel
+    self.initTime = sysTime
+    local soundSample = midiPlayer.soundTree[1]["Main"][pitch].sample
+    local soundID = "samples.001. Acoustic Grand Piano.Main."..soundSample
+    local soundPitch = midiPlayer.soundTree[1]["Main"][pitch].pitch
+    if not midiPlayer.soundDuration[soundID] then
+        midiPlayer.soundDuration[soundID] = getOggDuration(soundID)
+    end
+    self.duration = midiPlayer.soundDuration[soundID]
+    self.sound = sounds:playSound(soundID,player:getPos(),1,soundPitch)
     return self
+end
+
+function note:sustain(sustainTime)
+    local soundSample = midiPlayer.soundTree[1]["Main"][self.pitch].sample
+    local soundPitch = midiPlayer.soundTree[1]["Main"][self.pitch].pitch
+    self.loopSound = sounds:playSound("samples.001. Acoustic Grand Piano.Sustain."..soundSample,player:getPos(),1,soundPitch,true)
+    self.sustainTime = sustainTime 
+end
+
+function note:stop()
+    self.sound:stop()
+    if self.loopSound then
+        self.loopSound:stop()
+    end
+    midiPlayer.channels[self.channel][self.pitch] = nil
 end
 
 local midiEvents = {
     noteOn = function(eventData,sysTime,activeChunk,activeSong)
-        midiPlayer.channels[eventData.channel][eventData.key] = note:new(eventData.key,eventData.velocity,sysTime)
+        midiPlayer.channels[eventData.channel][eventData.key] = note:new(eventData.key,eventData.velocity,eventData.channel,sysTime)
         --log(midiPlayer.channels[eventData.channel][eventData.key])
     end,
     noteOff = function(eventData,sysTime,activeChunk,activeSong)
-        --log(eventData)
+        if midiPlayer.channels[eventData.channel][eventData.key] then
+            midiPlayer.channels[eventData.channel][eventData.key]:stop()
+        else
+            log("warn: tried to end key event while key not pressed",eventData)
+        end
     end,
     endOfTrack = function(eventData,sysTime,activeChunk,activeSong)
         activeSong:stop()
@@ -149,10 +200,11 @@ function events.render(delta)
     if activeSong and activeSong.state == "PLAYING" then
         for _, activeChunk in pairs(activeSong.chunks) do repeat
            for i = activeChunk.sequenceIndex, #activeChunk.sequence do 
-                if (sysTime - activeChunk.lastEventTime) >= (activeChunk.sequence[i].deltaTime * 10) then
+                if (sysTime - activeChunk.lastEventTime) >= (activeChunk.sequence[i].deltaTime * 1.29) then -- fix bug with clubP at *1.25
                     local typeFunction = midiEvents[activeChunk.sequence[i].type]
                     if typeFunction then
                         typeFunction(activeChunk.sequence[i],sysTime,activeChunk,activeSong)
+                        activeChunk.lastEventTime = sysTime
                     end
                 else
                     activeChunk.sequenceIndex = i
@@ -160,6 +212,21 @@ function events.render(delta)
                 end
              end
         until true end
+        for _,channel in pairs(midiPlayer.channels) do
+            for _,note in pairs(channel) do
+                if (note.initTime + math.floor(note.duration - 10) <= sysTime) and (not note.loopSound) then -- replace with note end check based on duration
+                    note.sound:stop()
+                    note:sustain(sysTime)
+                elseif note.loopSound then
+                    -- divide by 0 check needed
+                    --log(note.duration)
+                    local val = (1/(note.pitch/12))/((sysTime - note.sustainTime)/100)
+                    local pitchMod = ((note.pitch/12) * 500)
+                    local fadeVal = math.clamp(8000 - (sysTime - note.sustainTime) - pitchMod,0,8000)
+                    note.loopSound:setVolume(math.map(fadeVal,0,8000 - pitchMod,0,1))
+                end
+            end
+        end
     end
 end
 
@@ -309,6 +376,9 @@ local metaEvents = {
             data = buffer:readString(eventLength)
         })
     end,
+    [0x21] = function(buffer,currentChunk,deltaTime,eventLength)
+        currentChunk.midiPort = buffer:readString(eventLength)
+    end
 }
 local voiceMessages = {
     [0x8] = function(buffer,currentChunk,deltaTime,initialBits)
@@ -421,7 +491,7 @@ local function readMidi(midiSong,midiData)
                     if voiceMessages[statusByte] then
                         voiceMessages[statusByte](buffer,currentChunk,deltaTime,nextBits)
                     else
-                        --log(nextByte)
+                        log("Failed reading byte " .. string.format("%X",buffer:getPosition() - 1).." with value " .. string.format("%X",nextByte))
                     end
                 end
             end
