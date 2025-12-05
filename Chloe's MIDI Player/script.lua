@@ -2,8 +2,9 @@ local midiPlayer = require("midiPlayer")
 --midiPlayer.songs.Untitled:play()
    --midiPlayer.songs.sustain:play()
    
-  -- midiPlayer.songs.spire:play()
+  --midiPlayer.songs.clubP:play()
 --midiPlayer.songs.sustainQuality:play()
 --log(midiPlayer)
-
---logTable(midiPlayer.songs.clubP.chunks[2].sequence)
+log(midiPlayer.songs.clubP)
+logTable(midiPlayer.songs.clubP.tracks[1].sequence)
+logTable(midiPlayer.songs.clubP.tracks[2].sequence)

@@ -1,25 +1,18 @@
+--[================[
+TO DO
+- tempo support
+- volume support
+- instrument support
+- channel control messages
+- resolve sound not always being cancled (possible an end of track issue?)
+
+]================]
+
 local midiPlayer = {
     directory = "ChloesMidiPlayer",
     songs = {},
     activeSong = nil,
-    channels = {
-        [0] = {},
-        [1] = {},
-        [2] = {},
-        [3] = {},
-        [4] = {},
-        [5] = {},
-        [6] = {},
-        [7] = {},
-        [8] = {},
-        [9] = {},
-        [10] = {},
-        [11] = {},
-        [12] = {},
-        [13] = {},
-        [14] = {},
-        [15] = {}
-    },
+    tracks = {},
     soundTree = {},
     soundDuration = {}
 }
@@ -105,15 +98,15 @@ end
 local song = {}
 song.__index = song
 
-local chunk = {}
-chunk.__index = chunk
+local track = {}
+track.__index = track
 
 local note = {}
 note.__index = note
 
 function song:new()
     self = setmetatable({},song)
-    self.chunks = {}
+    self.tracks = {}
     self.state = "STOPPED"
     self.activeTrack = 1 -- only used for format 2
     return self
@@ -123,7 +116,7 @@ function song:play()
     self.state = "PLAYING"
     midiPlayer.activeSong = self.ID
     local sysTime = client.getSystemTime()
-    for k,v in pairs(self.chunks) do
+    for k,v in pairs(self.tracks) do
         v.sequenceIndex = 1
         v.lastEventTime = sysTime
     end
@@ -136,19 +129,20 @@ function song:stop()
     return self
 end
 
-function chunk:new()
-    self = setmetatable({},chunk)
+function track:new()
+    self = setmetatable({},track)
     self.sequenceIndex = 1
     self.lastEventTime = 0
     self.sequence = {}
     return self
 end
 
-function note:new(pitch,velocity,channel,sysTime)
+function note:new(pitch,velocity,channel,track,sysTime)
     self = setmetatable({},note)
     self.pitch = pitch
     self.velocity = velocity
     self.channel = channel
+    self.track = track
     self.initTime = sysTime
     local soundSample = midiPlayer.soundTree[1]["Main"][pitch].sample
     local soundID = "samples.001. Acoustic Grand Piano.Main."..soundSample
@@ -173,22 +167,22 @@ function note:stop()
     if self.loopSound then
         self.loopSound:stop()
     end
-    midiPlayer.channels[self.channel][self.pitch] = nil
+    midiPlayer.tracks[self.track][self.pitch] = nil
 end
 
 local midiEvents = {
-    noteOn = function(eventData,sysTime,activeChunk,activeSong)
-        midiPlayer.channels[eventData.channel][eventData.key] = note:new(eventData.key,eventData.velocity,eventData.channel,sysTime)
+    noteOn = function(eventData,sysTime,activeTrack,trackID,activeSong)
+        midiPlayer.tracks[trackID][eventData.key] = note:new(eventData.key,eventData.velocity,eventData.channel,trackID,sysTime)
         --log(midiPlayer.channels[eventData.channel][eventData.key])
     end,
-    noteOff = function(eventData,sysTime,activeChunk,activeSong)
-        if midiPlayer.channels[eventData.channel][eventData.key] then
-            midiPlayer.channels[eventData.channel][eventData.key]:stop()
+    noteOff = function(eventData,sysTime,activeTrack,trackID,activeSong)
+        if midiPlayer.tracks[trackID][eventData.key] then
+            midiPlayer.tracks[trackID][eventData.key]:stop()
         else
             log("warn: tried to end key event while key not pressed",eventData)
         end
     end,
-    endOfTrack = function(eventData,sysTime,activeChunk,activeSong)
+    endOfTrack = function(eventData,sysTime,activeTrack,trackID,activeSong)
         activeSong:stop()
     end
 
@@ -198,21 +192,24 @@ function events.render(delta)
     local sysTime = client.getSystemTime()
     local activeSong = midiPlayer.songs[midiPlayer.activeSong]
     if activeSong and activeSong.state == "PLAYING" then
-        for _, activeChunk in pairs(activeSong.chunks) do repeat
-           for i = activeChunk.sequenceIndex, #activeChunk.sequence do 
-                if (sysTime - activeChunk.lastEventTime) >= (activeChunk.sequence[i].deltaTime * 1.29) then -- fix bug with clubP at *1.25
-                    local typeFunction = midiEvents[activeChunk.sequence[i].type]
+        for trackID, activeTrack in pairs(activeSong.tracks) do repeat
+            if not midiPlayer.tracks[trackID] then
+                midiPlayer.tracks[trackID] = {}
+            end
+            for i = activeTrack.sequenceIndex, #activeTrack.sequence do 
+                if (sysTime - activeTrack.lastEventTime) >= (activeTrack.sequence[i].deltaTime * 1.29) then -- fix bug with clubP at *1.25
+                    local typeFunction = midiEvents[activeTrack.sequence[i].type]
                     if typeFunction then
-                        typeFunction(activeChunk.sequence[i],sysTime,activeChunk,activeSong)
-                        activeChunk.lastEventTime = sysTime
+                        typeFunction(activeTrack.sequence[i],sysTime,activeTrack,trackID,activeSong)
+                        activeTrack.lastEventTime = sysTime
                     end
                 else
-                    activeChunk.sequenceIndex = i
+                    activeTrack.sequenceIndex = i
                     break
                 end
              end
         until true end
-        for _,channel in pairs(midiPlayer.channels) do
+        for _,channel in pairs(midiPlayer.tracks) do
             for _,note in pairs(channel) do
                 if (note.initTime + math.floor(note.duration - 10) <= sysTime) and (not note.loopSound) then -- replace with note end check based on duration
                     note.sound:stop()
@@ -273,85 +270,95 @@ local function variableLengthBitsToNum(bits)
 end
 
 local metaEvents = {
-    [0x00] = function(buffer,currentChunk,deltaTime,eventLength)
-        currentChunk.sequenceNumber = buffer:readShort()
+    [0x00] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
+            type = "sequenceNumber",
+            deltaTime = deltaTime,
+            sequenceNumber = buffer:readShort()
+        })
     end,
-    [0x01] = function(buffer,currentChunk,deltaTime,eventLength)
-        table.insert(currentChunk.sequence,{
+    [0x01] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
             type = "textEvent",
             deltaTime = deltaTime,
             text = buffer:readString(eventLength)
         })
     end,
-    [0x02] = function(buffer,currentChunk,deltaTime,eventLength)
-        currentChunk.copyrightNotice = buffer:readString(eventLength)
+    [0x02] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
+            type = "copyrightNotice",
+            deltaTime = deltaTime,
+            text = buffer:readString(eventLength)
+        })
     end,
-    [0x03] = function(buffer,currentChunk,deltaTime,eventLength)
-        table.insert(currentChunk.sequence,{
+    [0x03] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
             type = "sequenceOrTrackName",
             deltaTime = deltaTime,
             text = buffer:readString(eventLength)
         })
     end,
-    [0x04] = function(buffer,currentChunk,deltaTime,eventLength)
-        table.insert(currentChunk.sequence,{
+    [0x04] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
             type = "instrumentName",
             deltaTime = deltaTime,
             text = buffer:readString(eventLength)
         })
     end,
-    [0x05] = function(buffer,currentChunk,deltaTime,eventLength)
-        table.insert(currentChunk.sequence,{
+    [0x05] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
             type = "lyric",
             deltaTime = deltaTime,
             text = buffer:readString(eventLength)
         })
     end,
-    [0x06] = function(buffer,currentChunk,deltaTime,eventLength)
-        table.insert(currentChunk.sequence,{
+    [0x06] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
             type = "marker",
             deltaTime = deltaTime,
             text = buffer:readString(eventLength)
         })
     end,
-    [0x07] = function(buffer,currentChunk,deltaTime,eventLength)
-        table.insert(currentChunk.sequence,{
+    [0x07] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
             type = "cuePoint",
             deltaTime = deltaTime,
             text = buffer:readString(eventLength)
         })
     end,
-    [0x20] = function(buffer,currentChunk,deltaTime,eventLength)
-        table.insert(currentChunk.sequence,{
+    [0x20] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
             type = "midiChannelPrefix",
             deltaTime = deltaTime,
             channel = buffer:read()
         })
     end,
-    [0x2F] = function(buffer,currentChunk,deltaTime,eventLength)
-        table.insert(currentChunk.sequence,{
+    [0x2F] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
             type = "endOfTrack",
             deltaTime = deltaTime
         })
     end,
-    [0x51] = function(buffer,currentChunk,deltaTime,eventLength)
-        table.insert(currentChunk.sequence,{
+    [0x51] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
             type = "setTempo",
             deltaTime = deltaTime,
             tempo = bitsToNum(readBits(buffer,3),0,23)
         })
     end,
-    [0x54] = function(buffer,currentChunk,deltaTime,eventLength)
-        currentChunk.smtpeOffset = {
+    [0x54] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
+            type = "smtpeOffset",
+            deltaTime = deltaTime,
             hours = buffer:readShort(),
             minutes = buffer:read(),
             seconds = buffer:read(),
             frames = buffer:read(),
             fractionalFrame = buffer:read()
-        }
+        })
     end,
-    [0x58] = function(buffer,currentChunk,deltaTime,eventLength)
-        table.insert(currentChunk.sequence,{
+    [0x58] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
             type = "timeSignature",
             deltaTime = deltaTime,
             numerator = buffer:read(),
@@ -360,29 +367,33 @@ local metaEvents = {
             noOf32thsNotesPer24MidiClocks = buffer:read()
         })
     end,
-    [0x59] = function(buffer,currentChunk,deltaTime,eventLength)
-        table.insert(currentChunk.sequence,{
+    [0x59] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
             type = "keySignature",
             deltaTime = deltaTime,
             noOfSharpsOrFlats = buffer:read(),
             majorOrMinorKey = buffer:read()
         })
     end,
-    [0x7F] = function(buffer,currentChunk,deltaTime,eventLength)
-        table.insert(currentChunk.sequence,{
+    [0x7F] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
             type = "sequencerSpecificMetaEvent",
             deltaTime = deltaTime,
             id = buffer:read(),
             data = buffer:readString(eventLength)
         })
     end,
-    [0x21] = function(buffer,currentChunk,deltaTime,eventLength)
-        currentChunk.midiPort = buffer:readString(eventLength)
+    [0x21] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
+            type = "midPort",
+            deltaTime = deltaTime,
+            port = buffer:read()
+        })
     end
 }
 local voiceMessages = {
-    [0x8] = function(buffer,currentChunk,deltaTime,initialBits)
-        table.insert(currentChunk.sequence,{
+    [0x8] = function(buffer,currentTrack,deltaTime,initialBits)
+        table.insert(currentTrack.sequence,{
             type = "noteOff",
             deltaTime = deltaTime,
             channel = bitsToNum(initialBits,0,3),
@@ -390,8 +401,8 @@ local voiceMessages = {
             velocity = bitsToNum(readBits(buffer,1),0,6)
         })
     end,
-    [0x9] = function(buffer,currentChunk,deltaTime,initialBits)
-        table.insert(currentChunk.sequence,{
+    [0x9] = function(buffer,currentTrack,deltaTime,initialBits)
+        table.insert(currentTrack.sequence,{
             type = "noteOn",
             deltaTime = deltaTime,
             channel = bitsToNum(initialBits,0,3),
@@ -399,8 +410,8 @@ local voiceMessages = {
             velocity = bitsToNum(readBits(buffer,1),0,6)
         })
     end,
-    [0xA] = function(buffer,currentChunk,deltaTime,initialBits)
-        table.insert(currentChunk.sequence,{
+    [0xA] = function(buffer,currentTrack,deltaTime,initialBits)
+        table.insert(currentTrack.sequence,{
             type = "polyphonicKeyPressure",
             deltaTime = deltaTime,
             channel = bitsToNum(initialBits,0,3),
@@ -408,8 +419,8 @@ local voiceMessages = {
             pressure = bitsToNum(readBits(buffer,1),0,6)
         })
     end,
-    [0xB] = function(buffer,currentChunk,deltaTime,initialBits)
-        table.insert(currentChunk.sequence,{
+    [0xB] = function(buffer,currentTrack,deltaTime,initialBits)
+        table.insert(currentTrack.sequence,{
             type = "controllerChange",
             deltaTime = deltaTime,
             channel = bitsToNum(initialBits,0,3),
@@ -417,24 +428,24 @@ local voiceMessages = {
             controllerValue = bitsToNum(readBits(buffer,1),0,6)
         })
     end,
-    [0xC] = function(buffer,currentChunk,deltaTime,initialBits)
-        table.insert(currentChunk.sequence,{
+    [0xC] = function(buffer,currentTrack,deltaTime,initialBits)
+        table.insert(currentTrack.sequence,{
             type = "programChange",
             deltaTime = deltaTime,
             channel = bitsToNum(initialBits,0,3),
             newProgramNumber = bitsToNum(readBits(buffer,1),0,6)
         })
     end,
-    [0xD] = function(buffer,currentChunk,deltaTime,initialBits)
-        table.insert(currentChunk.sequence,{
+    [0xD] = function(buffer,currentTrack,deltaTime,initialBits)
+        table.insert(currentTrack.sequence,{
             type = "channelKeyPressure",
             deltaTime = deltaTime,
             channel = bitsToNum(initialBits,0,3),
             channelPressureValue = bitsToNum(readBits(buffer,1),0,6)
         })
     end,
-    [0xE] = function(buffer,currentChunk,deltaTime,initialBits)
-        table.insert(currentChunk.sequence,{
+    [0xE] = function(buffer,currentTrack,deltaTime,initialBits)
+        table.insert(currentTrack.sequence,{
             type = "pitchBend",
             deltaTime = deltaTime,
             channel = bitsToNum(initialBits,0,3),
@@ -453,7 +464,7 @@ local function readMidi(midiSong,midiData)
     if buffer:readString(4) == "MThd" then
         buffer:setPosition(buffer:getPosition()+4)
         midiSong.format = buffer:readShort()
-        midiSong.tracks = buffer:readShort()
+        midiSong.numTracks = buffer:readShort()
         local bits = readBits(buffer,2)
         if bits[16] == 0 then
             midiSong.ticksPerQuaterNote = bitsToNum(bits,0,14)
@@ -462,7 +473,7 @@ local function readMidi(midiSong,midiData)
             midiSong.ticksPerFrame = bitsToNum(bits,0,7)
         end
         while buffer:readString(4) == "MTrk" do
-            local currentChunk = chunk:new()
+            local currentTrack = track:new()
             local length = buffer:readInt()
             local eventStartPos = buffer:getPosition()
             while (buffer:getPosition() - eventStartPos) < length do
@@ -481,7 +492,7 @@ local function readMidi(midiSong,midiData)
                     local type = buffer:read()
                     local eventLength = buffer:read()
                     if metaEvents[type] then
-                        metaEvents[type](buffer,currentChunk,deltaTime,eventLength)
+                        metaEvents[type](buffer,currentTrack,deltaTime,eventLength)
                     end
                 else
                     buffer:setPosition(buffer:getPosition() - 1)
@@ -489,13 +500,13 @@ local function readMidi(midiSong,midiData)
                     local statusByte = bitsToNum(nextBits,4,7)
                     --log(statusByte,nextBits)
                     if voiceMessages[statusByte] then
-                        voiceMessages[statusByte](buffer,currentChunk,deltaTime,nextBits)
+                        voiceMessages[statusByte](buffer,currentTrack,deltaTime,nextBits)
                     else
                         log("Failed reading byte " .. string.format("%X",buffer:getPosition() - 1).." with value " .. string.format("%X",nextByte))
                     end
                 end
             end
-            table.insert(midiSong.chunks, currentChunk)
+            table.insert(midiSong.tracks, currentTrack)
         end
     else
         log("Midi file was invalid")
