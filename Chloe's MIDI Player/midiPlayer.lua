@@ -169,15 +169,27 @@ function note:new(pitch,velocity,currentChannel,track,sysTime)
     if not self.instrument then
         self.instrument = midiPlayer.soundTree[1]
     end
-    local soundSample = self.instrument.Main[pitch].sample
-    local template = self.instrument.template
-    local soundID = template.."Main."..soundSample
-    local soundPitch = self.instrument.Main[pitch].pitch
+
+    local hasMain = true
+    local soundSample,soundPitch,template,soundID
+    if self.instrument.Main then
+        soundSample = self.instrument.Main[pitch].sample
+        soundPitch = self.instrument.Main[pitch].pitch
+        template = self.instrument.template
+        soundID = template.."Main."..soundSample
+    else
+        soundSample = self.instrument.Sustain[pitch].sample
+        soundPitch = self.instrument.Sustain[pitch].pitch
+        template = self.instrument.template
+        soundID = template.."Sustain."..soundSample
+        hasMain = false
+    end
+
     if not midiPlayer.soundDuration[soundID] then
         midiPlayer.soundDuration[soundID] = getOggDuration(soundID)
     end
     self.duration = midiPlayer.soundDuration[soundID]
-    self.sound = sounds:playSound(soundID,player:getPos(),1,soundPitch)
+    self.sound = sounds:playSound(soundID,player:getPos(),1,soundPitch,not hasMain)
     return self
 end
 
@@ -186,8 +198,13 @@ function note:sustain(sustainTime)
     local soundSample = self.instrument.Sustain[self.pitch].sample
     
     local soundID = template.."Sustain."..soundSample
-    local soundPitch = self.instrument.Main[self.pitch].pitch
-    self.loopSound = sounds:playSound(soundID,player:getPos(),1,soundPitch,true)
+    local soundPitch = self.instrument.Sustain[self.pitch].pitch
+    if self.instrument.Main then
+        self.sound:stop()
+        self.loopSound = sounds:playSound(soundID,player:getPos(),1,soundPitch,true)
+    else
+        self.loopSound = self.sound
+    end
     self.sustainTime = sustainTime 
 end
 
@@ -236,7 +253,7 @@ function events.render(delta)
                 midiPlayer.tracks[trackID] = {}
             end
             for i = activeTrack.sequenceIndex, #activeTrack.sequence do 
-                if (sysTime - activeTrack.lastEventTime) >= (activeTrack.sequence[i].deltaTime * (activeSong.tempo / (activeSong.ticksPerQuaterNote * 855))) then -- fix bug with clubP at *1.25
+                if (sysTime - activeTrack.lastEventTime) >= (activeTrack.sequence[i].deltaTime * (activeSong.tempo / (activeSong.ticksPerQuaterNote * 855))) then
                     local typeFunction = midiEvents[activeTrack.sequence[i].type]
                     if typeFunction then
                         typeFunction(activeTrack.sequence[i],sysTime,activeTrack,trackID,activeSong)
@@ -250,8 +267,7 @@ function events.render(delta)
         until true end
         for _,channel in pairs(midiPlayer.tracks) do
             for _,note in pairs(channel) do
-                if (note.initTime + math.floor(note.duration - 7) <= sysTime) and (not note.loopSound) then -- replace with note end check based on duration
-                    note.sound:stop()
+                if (note.initTime + math.floor(note.duration - 7) <= sysTime) and (not note.loopSound) then -- doesn't account for note pitch duration change, fix this
                     note:sustain(sysTime)
                 elseif note.loopSound then
                     -- divide by 0 check needed
