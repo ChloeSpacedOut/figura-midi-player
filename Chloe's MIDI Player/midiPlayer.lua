@@ -13,6 +13,7 @@ local midiPlayer = {
     songs = {},
     activeSong = nil,
     tracks = {},
+    channels = {},
     soundTree = {},
     soundDuration = {}
 }
@@ -57,6 +58,8 @@ for _,soundString in pairs(sounds:getCustomSounds()) do
             depth = depth + 1
         end
         if note and (type == "Sustain" or type == "Main") then
+            local templateString = string.match(soundString, "(.*)%.[^%.]+$")
+            templateString = string.match(templateString, "(.*)%.[^%.]+$") .. "."
             if not midiPlayer.soundTree[tonumber(index)] then
                 midiPlayer.soundTree[tonumber(index)] = {}
             end
@@ -66,6 +69,7 @@ for _,soundString in pairs(sounds:getCustomSounds()) do
             if not midiPlayer.soundTree[tonumber(index)][type].notes then
                 midiPlayer.soundTree[tonumber(index)][type].notes = {}
             end
+            midiPlayer.soundTree[tonumber(index)].template = templateString
             table.insert(midiPlayer.soundTree[tonumber(index)][type].notes,tonumber(note))
         end
     end
@@ -73,23 +77,25 @@ end
 
 -- bake pitches
 for _,sound in pairs(midiPlayer.soundTree) do
-    for _,type in pairs(sound) do
-        table.sort(type.notes,function(a, b)
-            return a < b
-        end)
-        local currentSample = 1
-        for k = 0, 127 do
-            local currentSamplePitch = type.notes[currentSample]
-            local nextSamplePitch = type.notes[currentSample + 1]
-            local maxPitch
-            if nextSamplePitch then
-                maxPitch = math.ceil((currentSamplePitch + nextSamplePitch)/2)
-            else
-                maxPitch = 127
-            end
-            type[k] = {sample = currentSamplePitch, pitch = 2^((k - currentSamplePitch)/12)}
-            if k >= maxPitch then
-                currentSample = currentSample + 1
+    for k,type in pairs(sound) do
+        if k ~= "template" then
+            table.sort(type.notes,function(a, b)
+                return a < b
+            end)
+            local currentSample = 1
+            for k = 0, 127 do
+                local currentSamplePitch = type.notes[currentSample]
+                local nextSamplePitch = type.notes[currentSample + 1]
+                local maxPitch
+                if nextSamplePitch then
+                    maxPitch = math.ceil((currentSamplePitch + nextSamplePitch)/2)
+                else
+                    maxPitch = 127
+                end
+                type[k] = {sample = currentSamplePitch, pitch = 2^((k - currentSamplePitch)/12)}
+                if k >= maxPitch then
+                    currentSample = currentSample + 1
+                end
             end
         end
     end
@@ -101,6 +107,9 @@ song.__index = song
 local track = {}
 track.__index = track
 
+local channel = {}
+channel.__index = channel
+
 local note = {}
 note.__index = note
 
@@ -108,6 +117,7 @@ function song:new()
     self = setmetatable({},song)
     self.tracks = {}
     self.state = "STOPPED"
+    self.tempo = 500000
     self.activeTrack = 1 -- only used for format 2
     return self
 end
@@ -137,16 +147,32 @@ function track:new()
     return self
 end
 
-function note:new(pitch,velocity,channel,track,sysTime)
+function channel:new()
+    self = setmetatable({},channel)
+    self.instrument = 0
+    return self
+end
+
+
+function note:new(pitch,velocity,currentChannel,track,sysTime)
     self = setmetatable({},note)
     self.pitch = pitch
     self.velocity = velocity
-    self.channel = channel
+    self.channel = currentChannel
     self.track = track
     self.initTime = sysTime
-    local soundSample = midiPlayer.soundTree[1]["Main"][pitch].sample
-    local soundID = "samples.001. Acoustic Grand Piano.Main."..soundSample
-    local soundPitch = midiPlayer.soundTree[1]["Main"][pitch].pitch
+    local channelObject = midiPlayer.channels[currentChannel]
+    if not channelObject then
+        channelObject = channel:new()
+    end
+    self.instrument = midiPlayer.soundTree[channelObject.instrument + 1]
+    if not self.instrument then
+        self.instrument = midiPlayer.soundTree[1]
+    end
+    local soundSample = self.instrument.Main[pitch].sample
+    local template = self.instrument.template
+    local soundID = template.."Main."..soundSample
+    local soundPitch = self.instrument.Main[pitch].pitch
     if not midiPlayer.soundDuration[soundID] then
         midiPlayer.soundDuration[soundID] = getOggDuration(soundID)
     end
@@ -156,9 +182,12 @@ function note:new(pitch,velocity,channel,track,sysTime)
 end
 
 function note:sustain(sustainTime)
-    local soundSample = midiPlayer.soundTree[1]["Main"][self.pitch].sample
-    local soundPitch = midiPlayer.soundTree[1]["Main"][self.pitch].pitch
-    self.loopSound = sounds:playSound("samples.001. Acoustic Grand Piano.Sustain."..soundSample,player:getPos(),1,soundPitch,true)
+    local template = self.instrument.template
+    local soundSample = self.instrument.Sustain[self.pitch].sample
+    
+    local soundID = template.."Sustain."..soundSample
+    local soundPitch = self.instrument.Main[self.pitch].pitch
+    self.loopSound = sounds:playSound(soundID,player:getPos(),1,soundPitch,true)
     self.sustainTime = sustainTime 
 end
 
@@ -184,6 +213,16 @@ local midiEvents = {
     end,
     endOfTrack = function(eventData,sysTime,activeTrack,trackID,activeSong)
         activeSong:stop()
+    end,
+    setTempo = function(eventData,sysTime,activeTrack,trackID,activeSong)
+        activeTrack.tempo = eventData.tempo / (activeSong.ticksPerQuaterNote * 1000)
+        activeSong.defaultTempo = eventData.tempo
+    end,
+    programChange = function(eventData,sysTime,activeTrack,trackID,activeSong)
+        if not midiPlayer.channels[eventData.channel] then
+            midiPlayer.channels[eventData.channel] = channel:new()
+        end
+        midiPlayer.channels[eventData.channel].instrument = eventData.newProgramNumber
     end
 
 }
@@ -197,7 +236,7 @@ function events.render(delta)
                 midiPlayer.tracks[trackID] = {}
             end
             for i = activeTrack.sequenceIndex, #activeTrack.sequence do 
-                if (sysTime - activeTrack.lastEventTime) >= (activeTrack.sequence[i].deltaTime * 1.29) then -- fix bug with clubP at *1.25
+                if (sysTime - activeTrack.lastEventTime) >= (activeTrack.sequence[i].deltaTime * (activeSong.tempo / (activeSong.ticksPerQuaterNote * 855))) then -- fix bug with clubP at *1.25
                     local typeFunction = midiEvents[activeTrack.sequence[i].type]
                     if typeFunction then
                         typeFunction(activeTrack.sequence[i],sysTime,activeTrack,trackID,activeSong)
@@ -211,7 +250,7 @@ function events.render(delta)
         until true end
         for _,channel in pairs(midiPlayer.tracks) do
             for _,note in pairs(channel) do
-                if (note.initTime + math.floor(note.duration - 10) <= sysTime) and (not note.loopSound) then -- replace with note end check based on duration
+                if (note.initTime + math.floor(note.duration - 7) <= sysTime) and (not note.loopSound) then -- replace with note end check based on duration
                     note.sound:stop()
                     note:sustain(sysTime)
                 elseif note.loopSound then
