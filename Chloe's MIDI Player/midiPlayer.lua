@@ -15,7 +15,23 @@ local midiPlayer = {
     tracks = {},
     channels = {},
     soundTree = {},
-    soundDuration = {}
+    soundDuration = {},
+    instruments = {
+        [1] = {sustain = 0.97, resonance = 0.5},
+        [2] = {sustain = 0.97, resonance = 0.5},
+        [3] = {sustain = 0.97, resonance = 0.5},
+        [4] = {sustain = 0.97, resonance = 0.5},
+        [5] = {sustain = 0.97, resonance = 0.5},
+        [6] = {sustain = 0.97, resonance = 0.5},
+        [7] = {sustain = 0.97, resonance = 0.5},
+        [8] = {sustain = 0.97, resonance = 0.5},
+        [9] = {sustain = 0.97, resonance = 0.5},
+        [10] = {sustain = 0.97, resonance = 0.5},
+        [11] = {sustain = 0.97, resonance = 0.5},
+        [12] = {sustain = 0.97, resonance = 0.5},
+        [13] = {sustain = 0.97, resonance = 0.5},
+        
+    }
 }
 
 
@@ -70,6 +86,7 @@ for _,soundString in pairs(sounds:getCustomSounds()) do
                 midiPlayer.soundTree[tonumber(index)][type].notes = {}
             end
             midiPlayer.soundTree[tonumber(index)].template = templateString
+            midiPlayer.soundTree[tonumber(index)].index = tonumber(index)
             table.insert(midiPlayer.soundTree[tonumber(index)][type].notes,tonumber(note))
         end
     end
@@ -78,7 +95,7 @@ end
 -- bake pitches
 for _,sound in pairs(midiPlayer.soundTree) do
     for k,type in pairs(sound) do
-        if k ~= "template" then
+        if k ~= "template" and k ~= "index" then
             table.sort(type.notes,function(a, b)
                 return a < b
             end)
@@ -184,6 +201,7 @@ function note:new(pitch,velocity,currentChannel,track,sysTime)
         soundID = template.."Sustain."..soundSample
         hasMain = false
     end
+    self.soundPitch = soundPitch
 
     if not midiPlayer.soundDuration[soundID] then
         midiPlayer.soundDuration[soundID] = getOggDuration(soundID)
@@ -193,7 +211,7 @@ function note:new(pitch,velocity,currentChannel,track,sysTime)
     return self
 end
 
-function note:sustain(sustainTime)
+function note:sustain()
     local template = self.instrument.template
     local soundSample = self.instrument.Sustain[self.pitch].sample
     
@@ -205,7 +223,6 @@ function note:sustain(sustainTime)
     else
         self.loopSound = self.sound
     end
-    self.sustainTime = sustainTime 
 end
 
 function note:stop()
@@ -252,8 +269,9 @@ function events.render(delta)
             if not midiPlayer.tracks[trackID] then
                 midiPlayer.tracks[trackID] = {}
             end
-            for i = activeTrack.sequenceIndex, #activeTrack.sequence do 
-                if (sysTime - activeTrack.lastEventTime) >= (activeTrack.sequence[i].deltaTime * (activeSong.tempo / (activeSong.ticksPerQuaterNote * 855))) then
+            for i = activeTrack.sequenceIndex, #activeTrack.sequence do
+                local playbackSpeed = 855 -- this isn't completely accurate
+                if (sysTime - activeTrack.lastEventTime) >= (activeTrack.sequence[i].deltaTime * (activeSong.tempo / (activeSong.ticksPerQuaterNote * playbackSpeed))) then
                     local typeFunction = midiEvents[activeTrack.sequence[i].type]
                     if typeFunction then
                         typeFunction(activeTrack.sequence[i],sysTime,activeTrack,trackID,activeSong)
@@ -267,15 +285,18 @@ function events.render(delta)
         until true end
         for _,channel in pairs(midiPlayer.tracks) do
             for _,note in pairs(channel) do
-                if (note.initTime + math.floor(note.duration - 7) <= sysTime) and (not note.loopSound) then -- doesn't account for note pitch duration change, fix this
-                    note:sustain(sysTime)
-                elseif note.loopSound then
-                    -- divide by 0 check needed
-                    --log(note.duration)
-                    local val = (1/(note.pitch/12))/((sysTime - note.sustainTime)/100)
-                    local pitchMod = ((note.pitch/12) * 500)
-                    local fadeVal = math.clamp(8000 - (sysTime - note.sustainTime) - pitchMod,0,8000)
-                    note.loopSound:setVolume(math.map(fadeVal,0,8000 - pitchMod,0,1))
+                local instrument = midiPlayer.instruments[note.instrument.index]
+                if instrument.sustain ~= 0 then
+                    local pitchMod = 1 + (note.pitch/192)
+                    local noteVol = instrument.sustain^(((sysTime - note.initTime)/100)*pitchMod)
+                    if (note.initTime + math.floor((note.duration * (1/note.soundPitch)) - 7) <= sysTime) and (not note.loopSound) then
+                        note:sustain()
+                    end
+                    if note.loopSound then
+                        note.loopSound:setVolume(noteVol)
+                    elseif note.sound then
+                        note.sound:setVolume(noteVol)
+                    end
                 end
             end
         end
