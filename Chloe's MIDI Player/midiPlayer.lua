@@ -1,6 +1,6 @@
 --[================[
 TO DO
-- tempo support
+- crossfade between main sample and sustain (or resonance if needed)
 - volume support
 - instrument support
 - channel control messages
@@ -17,17 +17,17 @@ local midiPlayer = {
     soundTree = {},
     soundDuration = {},
     instruments = {
-        [1] = {sustain = 0.97, resonance = 0.5},
-        [2] = {sustain = 0.97, resonance = 0.5},
-        [3] = {sustain = 0.97, resonance = 0.5},
-        [4] = {sustain = 0.97, resonance = 0.5},
-        [5] = {sustain = 0.97, resonance = 0.5},
-        [6] = {sustain = 0.97, resonance = 0.5},
-        [7] = {sustain = 0.97, resonance = 0.5},
-        [8] = {sustain = 0.97, resonance = 0.5},
-        [9] = {sustain = 0.97, resonance = 0.5},
-        [10] = {sustain = 0.97, resonance = 0.5},
-        [11] = {sustain = 0.97, resonance = 0.5},
+        [1] = {sustain = 0.97, resonance = 0.3},
+        [2] = {sustain = 0.97, resonance = 0.3},
+        [3] = {sustain = 0.97, resonance = 0.3},
+        [4] = {sustain = 0.97, resonance = 0.3},
+        [5] = {sustain = 0.97, resonance = 0.3},
+        [6] = {sustain = 0.9, resonance = 0.1},
+        [7] = {sustain = 0.97, resonance = 0.3},
+        [8] = {sustain = 0.9, resonance = 0.1},
+        [9] = {sustain = 0.8, resonance = 1},
+        [10] = {sustain = 0.8, resonance = 1},
+        [11] = {sustain = 0.9, resonance = 1},
         [12] = {sustain = 0.97, resonance = 0.5},
         [13] = {sustain = 0.97, resonance = 0.5},
         
@@ -153,6 +153,11 @@ end
 function song:stop()
     midiPlayer.activeSong = nil
     self.state = "STOPPED"
+    for _,track in pairs(midiPlayer.tracks) do
+        for _,note in pairs(track) do
+            note:stop(  )
+        end
+    end
     return self
 end
 
@@ -171,7 +176,8 @@ function channel:new()
 end
 
 
-function note:new(pitch,velocity,currentChannel,track,sysTime)
+function note:play(pitch,velocity,currentChannel,track,sysTime)
+    self.state = "PLAYING"
     self = setmetatable({},note)
     self.pitch = pitch
     self.velocity = velocity
@@ -212,6 +218,9 @@ function note:new(pitch,velocity,currentChannel,track,sysTime)
 end
 
 function note:sustain()
+    if self.state ~= "RELEASED" then 
+        self.state = "SUSTAINING"
+    end
     local template = self.instrument.template
     local soundSample = self.instrument.Sustain[self.pitch].sample
     
@@ -225,6 +234,11 @@ function note:sustain()
     end
 end
 
+function note:release(sysTime)
+    self.state = "RELEASED"
+    self.releaseTime = sysTime
+end
+
 function note:stop()
     self.sound:stop()
     if self.loopSound then
@@ -235,12 +249,20 @@ end
 
 local midiEvents = {
     noteOn = function(eventData,sysTime,activeTrack,trackID,activeSong)
-        midiPlayer.tracks[trackID][eventData.key] = note:new(eventData.key,eventData.velocity,eventData.channel,trackID,sysTime)
-        --log(midiPlayer.channels[eventData.channel][eventData.key])
+        if midiPlayer.tracks[trackID][eventData.key] then
+            midiPlayer.tracks[trackID][eventData.key]:stop()
+        end
+        midiPlayer.tracks[trackID][eventData.key] = note:play(eventData.key,eventData.velocity,eventData.channel,trackID,sysTime)
     end,
     noteOff = function(eventData,sysTime,activeTrack,trackID,activeSong)
         if midiPlayer.tracks[trackID][eventData.key] then
-            midiPlayer.tracks[trackID][eventData.key]:stop()
+            local instrumentIndex = midiPlayer.tracks[trackID][eventData.key].instrument.index
+            local instrument = midiPlayer.instruments[instrumentIndex]
+            if instrument.resonance ~= 0 then
+                midiPlayer.tracks[trackID][eventData.key]:release(sysTime)
+            else
+                midiPlayer.tracks[trackID][eventData.key]:stop()
+            end
         else
             log("warn: tried to end key event while key not pressed",eventData)
         end
@@ -286,17 +308,39 @@ function events.render(delta)
         for _,channel in pairs(midiPlayer.tracks) do
             for _,note in pairs(channel) do
                 local instrument = midiPlayer.instruments[note.instrument.index]
+                local noteVol = 1
+                local pitchMod = 1 + (note.pitch/192)
+                local resonanceMod = 1
+                if instrument.resonance ~= 0 and note.state == "RELEASED" then
+                    resonanceMod = math.clamp(instrument.resonance^(((sysTime - note.releaseTime)/100)*pitchMod),0,1)
+                end
+                -- calculate resonance value up here
                 if instrument.sustain ~= 0 then
-                    local pitchMod = 1 + (note.pitch/192)
-                    local noteVol = instrument.sustain^(((sysTime - note.initTime)/100)*pitchMod)
+                    
+                    noteVol = instrument.sustain^(((sysTime - note.initTime)/100)*pitchMod)
                     if (note.initTime + math.floor((note.duration * (1/note.soundPitch)) - 7) <= sysTime) and (not note.loopSound) then
                         note:sustain()
                     end
-                    if note.loopSound then
+                    if instrument.resonance ~= 0 and note.state == "RELEASED" then
+                        if note.loopSound then
+                            note.loopSound:setVolume(noteVol * resonanceMod)
+                        elseif note.sound then
+                            note.sound:setVolume(noteVol * resonanceMod)
+                        end
+                    elseif note.state == "SUSTAINING" then
                         note.loopSound:setVolume(noteVol)
-                    elseif note.sound then
-                        note.sound:setVolume(noteVol)
+                    elseif note.state == "PLAYING" then
+                        note.sound:setVolume(noteVol) -- idk if this accounts for loop only samples
                     end
+                    -- if sustain is a thing, multiply the sustain value by the resonance value. 
+                end
+                if instrument.resonance ~= 0 and note.state == "RELEASED" then
+                    if (noteVol * resonanceMod) < 0.01 then
+                        note:stop()
+                    end
+                    -- if sustain not a thing, multiply sustain by volume (1 for now)
+                    -- check if volume bellow threshhold
+                    -- resonance is after note end, how much longer it keeps going. 0 would keep the sustain for as long as it needs, bells use this. 1 cuts immediately.
                 end
             end
         end

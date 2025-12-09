@@ -1,10 +1,10 @@
-local midiPlayer = require("midiPlayer")
+midiPlayer = require("midiPlayer")
 --midiPlayer.songs.Untitled:play()
-   midiPlayer.songs.sustain:play()
+   --midiPlayer.songs.sustain:play()
   
    
 --midiPlayer.songs.elevating:play()
- -- midiPlayer.songs.clubP:play()
+--midiPlayer.songs.clubP:play()
  --midiPlayer.songs.test:play()
 
 --midiPlayer.songs.sustainQuality:play()
