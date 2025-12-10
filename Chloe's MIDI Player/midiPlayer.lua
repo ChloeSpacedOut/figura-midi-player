@@ -28,8 +28,19 @@ local midiPlayer = {
         [9] = {sustain = 0.8, resonance = 1},
         [10] = {sustain = 0.8, resonance = 1},
         [11] = {sustain = 0.9, resonance = 1},
-        [12] = {sustain = 0.97, resonance = 0.5},
-        [13] = {sustain = 0.97, resonance = 0.5},
+        [12] = {sustain = 0.97, resonance = 0.3},
+        [13] = {sustain = 0.97, resonance = 0.3},
+        [14] = {sustain = 0.97, resonance = 0.3},
+        [15] = {sustain = 0.8, resonance = 1},
+        [16] = {sustain = 0.9, resonance = 0.7},
+        [17] = {sustain = 1, resonance = 0.1},
+        [18] = {sustain = 1, resonance = 0.1},
+        [19] = {sustain = 1, resonance = 0.1},
+        [20] = {sustain = 1, resonance = 0.5},
+        [21] = {sustain = 1, resonance = 0.1},
+        [22] = {sustain = 1, resonance = 0.1},
+        [23] = {sustain = 1, resonance = 0.1},
+        [24] = {sustain = 1, resonance = 0.1},
         
     }
 }
@@ -314,9 +325,7 @@ function events.render(delta)
                 if instrument.resonance ~= 0 and note.state == "RELEASED" then
                     resonanceMod = math.clamp(instrument.resonance^(((sysTime - note.releaseTime)/100)*pitchMod),0,1)
                 end
-                -- calculate resonance value up here
                 if instrument.sustain ~= 0 then
-                    
                     noteVol = instrument.sustain^(((sysTime - note.initTime)/100)*pitchMod)
                     if (note.initTime + math.floor((note.duration * (1/note.soundPitch)) - 7) <= sysTime) and (not note.loopSound) then
                         note:sustain()
@@ -332,15 +341,11 @@ function events.render(delta)
                     elseif note.state == "PLAYING" then
                         note.sound:setVolume(noteVol) -- idk if this accounts for loop only samples
                     end
-                    -- if sustain is a thing, multiply the sustain value by the resonance value. 
                 end
                 if instrument.resonance ~= 0 and note.state == "RELEASED" then
                     if (noteVol * resonanceMod) < 0.01 then
                         note:stop()
                     end
-                    -- if sustain not a thing, multiply sustain by volume (1 for now)
-                    -- check if volume bellow threshhold
-                    -- resonance is after note end, how much longer it keeps going. 0 would keep the sustain for as long as it needs, bells use this. 1 cuts immediately.
                 end
             end
         end
