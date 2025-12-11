@@ -23,9 +23,9 @@ local midiPlayer = {
         [4] = {sustain = 0.97, resonance = 0.3},
         [5] = {sustain = 0.97, resonance = 0.3},
         [6] = {sustain = 0.9, resonance = 0.1},
-        [7] = {sustain = 0.97, resonance = 0.3},
+        [7] = {sustain = 0.9, resonance = 0.3},
         [8] = {sustain = 0.9, resonance = 0.1},
-        [9] = {sustain = 0.8, resonance = 1},
+        [9] = {sustain = 0.85, resonance = 1},
         [10] = {sustain = 0.8, resonance = 1},
         [11] = {sustain = 0.9, resonance = 1},
         [12] = {sustain = 0.97, resonance = 0.3},
@@ -41,6 +41,7 @@ local midiPlayer = {
         [22] = {sustain = 1, resonance = 0.1},
         [23] = {sustain = 1, resonance = 0.1},
         [24] = {sustain = 1, resonance = 0.1},
+        [25] = {sustain = 0.97, resonance = 0.3},
         
     }
 }
