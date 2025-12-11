@@ -25,14 +25,14 @@ local midiPlayer = {
         [6] = {sustain = 0.9, resonance = 0.1},
         [7] = {sustain = 0.9, resonance = 0.3},
         [8] = {sustain = 0.9, resonance = 0.1},
-        [9] = {sustain = 0.85, resonance = 1},
+        [9] = {sustain = 0.85, resonance = 0.6},
         [10] = {sustain = 0.8, resonance = 1},
         [11] = {sustain = 0.9, resonance = 1},
-        [12] = {sustain = 0.97, resonance = 0.3},
-        [13] = {sustain = 0.97, resonance = 0.3},
-        [14] = {sustain = 0.97, resonance = 0.3},
-        [15] = {sustain = 0.8, resonance = 1},
-        [16] = {sustain = 0.9, resonance = 0.7},
+        [12] = {sustain = 0.94, resonance = 0.3},
+        [13] = {sustain = 0.85, resonance = 0.3},
+        [14] = {sustain = 1, resonance = 1},
+        [15] = {sustain = 0.85, resonance = 1},
+        [16] = {sustain = 0.8, resonance = 0.7},
         [17] = {sustain = 1, resonance = 0.1},
         [18] = {sustain = 1, resonance = 0.1},
         [19] = {sustain = 1, resonance = 0.1},
@@ -41,7 +41,7 @@ local midiPlayer = {
         [22] = {sustain = 1, resonance = 0.1},
         [23] = {sustain = 1, resonance = 0.1},
         [24] = {sustain = 1, resonance = 0.1},
-        [25] = {sustain = 0.97, resonance = 0.3},
+        [25] = {sustain = 0.94, resonance = 0.3},
         
     }
 }
@@ -167,7 +167,7 @@ function song:stop()
     self.state = "STOPPED"
     for _,track in pairs(midiPlayer.tracks) do
         for _,note in pairs(track) do
-            note:stop(  )
+            note:stop()
         end
     end
     return self
@@ -230,6 +230,10 @@ function note:play(pitch,velocity,currentChannel,track,sysTime)
 end
 
 function note:sustain()
+    if not self.instrument.Sustain then
+        self.state = "RELEASED"
+        return
+     end
     if self.state ~= "RELEASED" then 
         self.state = "SUSTAINING"
     end
@@ -275,8 +279,6 @@ local midiEvents = {
             else
                 midiPlayer.tracks[trackID][eventData.key]:stop()
             end
-        else
-            log("warn: tried to end key event while key not pressed",eventData)
         end
     end,
     endOfTrack = function(eventData,sysTime,activeTrack,trackID,activeSong)
@@ -323,7 +325,7 @@ function events.render(delta)
                 local noteVol = 1
                 local pitchMod = 1 + (note.pitch/192)
                 local resonanceMod = 1
-                if instrument.resonance ~= 0 and note.state == "RELEASED" then
+                if instrument.resonance ~= 0 and note.state == "RELEASED" and note.instrument.Sustain then
                     resonanceMod = math.clamp(instrument.resonance^(((sysTime - note.releaseTime)/100)*pitchMod),0,1)
                 end
                 if instrument.sustain ~= 0 then
@@ -331,11 +333,15 @@ function events.render(delta)
                     if (note.initTime + math.floor((note.duration * (1/note.soundPitch)) - 7) <= sysTime) and (not note.loopSound) then
                         note:sustain()
                     end
-                    if instrument.resonance ~= 0 and note.state == "RELEASED" then
-                        if note.loopSound then
-                            note.loopSound:setVolume(noteVol * resonanceMod)
-                        elseif note.sound then
-                            note.sound:setVolume(noteVol * resonanceMod)
+                    if note.state == "RELEASED" then
+                        if instrument.resonance ~= 0 then
+                            if note.loopSound then
+                                note.loopSound:setVolume(noteVol * resonanceMod)
+                            elseif note.sound then
+                                note.sound:setVolume(noteVol * resonanceMod)
+                            end
+                        else
+                            note:stop()
                         end
                     elseif note.state == "SUSTAINING" then
                         note.loopSound:setVolume(noteVol)
@@ -347,6 +353,9 @@ function events.render(delta)
                     if (noteVol * resonanceMod) < 0.01 then
                         note:stop()
                     end
+                end
+                if (not note.loopSound) and (instrument.resonance == 1) and (not note.sound:isPlaying()) then
+                    note:stop()
                 end
             end
         end
