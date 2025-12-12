@@ -42,6 +42,9 @@ local midiPlayer = {
         [23] = {sustain = 1, resonance = 0.1},
         [24] = {sustain = 1, resonance = 0.1},
         [25] = {sustain = 0.94, resonance = 0.3},
+        [26] = {sustain = 0.9, resonance = 0.3},
+        [27] = {sustain = 0.92, resonance = 0.3},
+        [28] = {sustain = 0.92, resonance = 0.3},
         
     }
 }
