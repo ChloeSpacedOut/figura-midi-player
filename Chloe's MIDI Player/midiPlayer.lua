@@ -18,8 +18,6 @@ local midiPlayer = {
     soundDuration = {},
     instruments = {
         [1] = {sustain = 0.97, resonance = 0.3, minVol = 0},
-        [2] = {sustain = 0.97, resonance = 0.3, minVol = 0},
-        [3] = {sustain = 0.97, resonance = 0.3, minVol = 0},
         [4] = {sustain = 0.97, resonance = 0.3, minVol = 0},
         [5] = {sustain = 0.97, resonance = 0.3, minVol = 0},
         [6] = {sustain = 0.9, resonance = 0.1, minVol = 0},
@@ -55,7 +53,22 @@ local midiPlayer = {
         [36] = {sustain = 0.97, resonance = 0.1, minVol = 0},
         [37] = {sustain = 0.97, resonance = 0.1, minVol = 0},
         [38] = {sustain = 0.95, resonance = 0.1, minVol = 0},
-        
+        [39] = {sustain = 0.9, resonance = 0.1, minVol = 0},
+        [40] = {sustain = 0.94, resonance = 0.1, minVol = 0.1},
+        [41] = {sustain = 1, resonance = 0.1, minVol = 0},
+        [43] = {sustain = 1, resonance = 0.1, minVol = 0},
+        [44] = {sustain = 1, resonance = 0.1, minVol = 0},
+        [45] = {sustain = 1, resonance = 0.3, minVol = 0},
+        [46] = {sustain = 1, resonance = 1, minVol = 0},
+        [47] = {sustain = 0.9, resonance = 1, minVol = 0},
+        [48] = {sustain = 1, resonance = 1, minVol = 0},
+        [49] = {sustain = 1, resonance = 0.5, minVol = 0},
+        [50] = {sustain = 1, resonance = 0.5, minVol = 0},
+    },
+    redundancyMappings = {
+        [2] = 1,
+        [3] = 1,
+        [42] = 41
     }
 }
 
@@ -215,7 +228,12 @@ function note:play(pitch,velocity,currentChannel,track,sysTime)
     end
     self.instrument = midiPlayer.soundTree[channelObject.instrument + 1]
     if not self.instrument then
-        self.instrument = midiPlayer.soundTree[1]
+        local redundancy = midiPlayer.redundancyMappings[channelObject.instrument + 1]
+        if redundancy then
+            self.instrument = midiPlayer.soundTree[redundancy]
+        else
+            self.instrument = midiPlayer.soundTree[1]
+        end
     end
 
     local hasMain = true
