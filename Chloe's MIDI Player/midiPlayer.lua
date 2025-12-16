@@ -64,11 +64,25 @@ local midiPlayer = {
         [48] = {sustain = 1, resonance = 1, minVol = 0},
         [49] = {sustain = 1, resonance = 0.5, minVol = 0},
         [50] = {sustain = 1, resonance = 0.5, minVol = 0},
+        [51] = {sustain = 1, resonance = 0.5, minVol = 0},
+        [53] = {sustain = 1, resonance = 0.5, minVol = 0},
+        [54] = {sustain = 0.94, resonance = 0.5, minVol = 0.5},
+        [55] = {sustain = 1, resonance = 0.5, minVol = 0},
+        [56] = {sustain = 1, resonance = 1, minVol = 0},
+        [57] = {sustain = 1, resonance = 0.1, minVol = 0},
+        [58] = {sustain = 1, resonance = 0.1, minVol = 0},
+        [59] = {sustain = 1, resonance = 0.1, minVol = 0},
+        [60] = {sustain = 1, resonance = 0.1, minVol = 0},
+        [61] = {sustain = 1, resonance = 0.1, minVol = 0},
+        [62] = {sustain = 1, resonance = 0.1, minVol = 0},
+        [63] = {sustain = 1, resonance = 0.1, minVol = 0},
+        [64] = {sustain = 1, resonance = 0.1, minVol = 0},
     },
     redundancyMappings = {
         [2] = 1,
         [3] = 1,
-        [42] = 41
+        [42] = 41,
+        [52] = 51
     }
 }
 
