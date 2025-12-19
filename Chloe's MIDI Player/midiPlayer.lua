@@ -8,6 +8,8 @@ TO DO
 
 ]================]
 
+local readMidi
+
 local midiPlayer = {
     directory = "ChloesMidiPlayer",
     songs = {},
@@ -113,13 +115,41 @@ local midiPlayer = {
         [99] = {sustain = 0.93, resonance = 1, minVol = 0},
         [100] = {sustain = 0.93, resonance = 0.7, minVol = 0.3},
         [101] = {sustain = 0.93, resonance = 0, minVol = 0},
+        [102] = {sustain = 1, resonance = 0.8, minVol = 0},
+        [103] = {sustain = 1, resonance = 0.8, minVol = 0},
+        [104] = {sustain = 1, resonance = 0.8, minVol = 0},
+        [105] = {sustain = 0.96, resonance = 0.7, minVol = 0},
+        [106] = {sustain = 0.93, resonance = 0.5, minVol = 0},
+        [107] = {sustain = 0.85, resonance = 0.5, minVol = 0},
+        [108] = {sustain = 0.88, resonance = 1, minVol = 0},
+        [109] = {sustain = 1, resonance = 1, minVol = 0},
+        [110] = {sustain = 1, resonance = 0.2, minVol = 0},
+        [111] = {sustain = 1, resonance = 0.2, minVol = 0},
+        [113] = {sustain = 1, resonance = 1, minVol = 0},
+        [114] = {sustain = 1, resonance = 1, minVol = 0},
+        [115] = {sustain = 1, resonance = 1, minVol = 0},
+        [116] = {sustain = 1, resonance = 1, minVol = 0},
+        [117] = {sustain = 0.8, resonance = 1, minVol = 0},
+        [118] = {sustain = 1, resonance = 1, minVol = 0},
+        [119] = {sustain = 1, resonance = 1, minVol = 0},
+        [120] = {sustain = 1, resonance = 0.1, minVol = 0},
+        [121] = {sustain = 1, resonance = 1, minVol = 0},
+        [122] = {sustain = 1, resonance = 1, minVol = 0},
+        [123] = {sustain = 1, resonance = 0.8, minVol = 0},
+        [124] = {sustain = 0.95, resonance = 0.8, minVol = 0},
+        [125] = {sustain = 1, resonance = 0.1, minVol = 0},
+        [126] = {sustain = 1, resonance = 0.8, minVol = 0},
+        [127] = {sustain = 1, resonance = 0.8, minVol = 0},
+        [128] = {sustain = 1, resonance = 1, minVol = 0},
+        [129] = {sustain = 1, resonance = 1, minVol = 0},
     },
     redundancyMappings = {
         [2] = 1,
         [3] = 1,
         [42] = 41,
         [52] = 51,
-        [95] = 53
+        [95] = 53,
+        [112] = 110
     }
 }
 
@@ -219,17 +249,21 @@ channel.__index = channel
 local note = {}
 note.__index = note
 
-function song:new()
+function song:new(rawData)
     self = setmetatable({},song)
     self.tracks = {}
     self.state = "STOPPED"
     self.tempo = 500000
     self.activeTrack = 1 -- only used for format 2
+    self.rawSong = rawData
     return self
 end
 
 function song:play()
     self.state = "PLAYING"
+    if not next(self.tracks) then
+        readMidi(self,self.rawSong)
+    end
     midiPlayer.activeSong = self.ID
     local sysTime = client.getSystemTime()
     for k,v in pairs(self.tracks) do
@@ -277,7 +311,11 @@ function note:play(pitch,velocity,currentChannel,track,sysTime)
     if not channelObject then
         channelObject = channel:new()
     end
-    self.instrument = midiPlayer.soundTree[channelObject.instrument + 1]
+    if currentChannel ~= 9 then
+        self.instrument = midiPlayer.soundTree[channelObject.instrument + 1]
+    else
+        self.instrument = midiPlayer.soundTree[129]
+    end
     if not self.instrument then
         local redundancy = midiPlayer.redundancyMappings[channelObject.instrument + 1]
         if redundancy then
@@ -672,7 +710,7 @@ local voiceMessages = {
     end,
 }
 
-local function readMidi(midiSong,midiData)
+function readMidi(midiSong,midiData)
     local buffer = data:createBuffer()
     buffer:writeByteArray(midiData)
     buffer:setPosition(0)
@@ -748,10 +786,9 @@ local function getMidiData()
         local suffix = string.sub(fileName,-4,-1)
         local name = string.sub(fileName,1,-5)
         if suffix == ".mid" and (not midiPlayer.songs[name]) then
-            midiPlayer.songs[name] = song:new()
-            midiPlayer.songs[name].ID = name
             local midiData = fast_read_byte_array(path)
-            readMidi(midiPlayer.songs[name],midiData)
+            midiPlayer.songs[name] = song:new(midiData)
+            midiPlayer.songs[name].ID = name
         end
     end
 end
