@@ -1,10 +1,10 @@
 midiPlayer = require("midiPlayer")
 --midiPlayer.songs.Untitled:play()
-   --midiPlayer.songs.sustain:play()
+   -- midiPlayer.songs.fire:play()
   
    
---midiPlayer.songs.elevating:play()
-midiPlayer.songs.one:play()
+midiPlayer.songs.op2:play()
+-- midiPlayer.songs.desyncTest:play()
 --midiPlayer.songs.sustainVolume:play()
 --midiPlayer.songs.resonance:play()
  --midiPlayer.songs.test:play()

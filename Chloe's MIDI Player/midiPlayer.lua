@@ -154,9 +154,10 @@ local midiPlayer = {
 }
 
 
+local nbt = avatar:getNBT()
 local function getOggDuration(soundID)
     local ogg_bytes = ""
-    for k,v in pairs(avatar:getNBT().sounds[soundID]) do
+    for k,v in pairs(nbt.sounds[soundID]) do
         ogg_bytes = ogg_bytes .. string.char(v % 128)
     end
 
@@ -268,7 +269,7 @@ function song:play()
     local sysTime = client.getSystemTime()
     for k,v in pairs(self.tracks) do
         v.sequenceIndex = 1
-        v.lastEventTime = sysTime
+        v.lastEventTime = nil
     end
     return self
 end
@@ -298,12 +299,14 @@ function channel:new()
     return self
 end
 
+local toPlay = {}
 
+local l = 0
 function note:play(pitch,velocity,currentChannel,track,sysTime)
     self.state = "PLAYING"
     self = setmetatable({},note)
     self.pitch = pitch
-    self.velocity = velocity
+    self.velocity = velocity/1000
     self.channel = currentChannel
     self.track = track
     self.initTime = sysTime
@@ -345,7 +348,7 @@ function note:play(pitch,velocity,currentChannel,track,sysTime)
         midiPlayer.soundDuration[soundID] = getOggDuration(soundID)
     end
     self.duration = midiPlayer.soundDuration[soundID]
-    self.sound = sounds:playSound(soundID,player:getPos(),1,soundPitch,not hasMain)
+    self.sound = sounds:playSound(soundID,player:getPos(),self.velocity,soundPitch,not hasMain)
     return self
 end
 
@@ -364,7 +367,7 @@ function note:sustain()
     local soundPitch = self.instrument.Sustain[self.pitch].pitch
     if self.instrument.Main then
         self.sound:stop()
-        self.loopSound = sounds:playSound(soundID,player:getPos(),1,soundPitch,true)
+        self.loopSound = sounds:playSound(soundID,player:getPos(),self.velocity,soundPitch,true)
     else
         self.loopSound = self.sound
     end
@@ -418,55 +421,63 @@ local midiEvents = {
 }
 
 function events.render(delta)
-    local sysTime = client.getSystemTime()
     local activeSong = midiPlayer.songs[midiPlayer.activeSong]
     if activeSong and activeSong.state == "PLAYING" then
-        for trackID, activeTrack in pairs(activeSong.tracks) do repeat
+        local sysTime = client.getSystemTime()
+        for trackID, activeTrack in pairs(activeSong.tracks) do
             if not midiPlayer.tracks[trackID] then
                 midiPlayer.tracks[trackID] = {}
             end
             for i = activeTrack.sequenceIndex, #activeTrack.sequence do
-                local playbackSpeed = 855 -- this isn't completely accurate
-                if (sysTime - activeTrack.lastEventTime) >= (activeTrack.sequence[i].deltaTime * (activeSong.tempo / (activeSong.ticksPerQuaterNote * playbackSpeed))) then
+                local playbackSpeed = 1700
+                if not activeTrack.lastEventTime then
+                    activeTrack.lastEventTime = sysTime
+                end
+                local deltaTime = sysTime - activeTrack.lastEventTime
+                local targetDelta = activeTrack.sequence[i].deltaTime * (activeSong.tempo / (activeSong.ticksPerQuaterNote * playbackSpeed))
+                if deltaTime >= targetDelta then
                     local typeFunction = midiEvents[activeTrack.sequence[i].type]
                     if typeFunction then
                         typeFunction(activeTrack.sequence[i],sysTime,activeTrack,trackID,activeSong)
-                        activeTrack.lastEventTime = sysTime
                     end
+                    activeTrack.lastEventTime = sysTime - (deltaTime - targetDelta)
                 else
                     activeTrack.sequenceIndex = i
                     break
                 end
              end
-        until true end
+        end
+
+
         for _,channel in pairs(midiPlayer.tracks) do
             for _,note in pairs(channel) do
                 local instrument = midiPlayer.instruments[note.instrument.index]
                 local noteVol = 1
                 local pitchMod = 1 + (note.pitch/192)
                 local resonanceMod = 1
+
                 if instrument.resonance ~= 0 and note.state == "RELEASED" and note.instrument.Sustain then
-                    resonanceMod = math.clamp(instrument.resonance^(((sysTime - note.releaseTime)/100)*pitchMod),0,1)
+                    resonanceMod = math.clamp(instrument.resonance^(((client.getSystemTime() - note.releaseTime)/100)*pitchMod),0,1)
                 end
                 if instrument.sustain ~= 0 then
-                    noteVol = math.clamp(instrument.sustain^(((sysTime - note.initTime)/100)*pitchMod),instrument.minVol,1)
-                    if (note.initTime + math.floor((note.duration * (1/note.soundPitch)) - 7) <= sysTime) and (not note.loopSound) then
+                    noteVol = math.clamp(instrument.sustain^(((client.getSystemTime() - note.initTime)/100)*pitchMod),instrument.minVol,1)
+                    if (note.initTime + math.floor((note.duration * (1/note.soundPitch)) - 7) <= client.getSystemTime()) and (not note.loopSound) then
                         note:sustain()
                     end
                     if note.state == "RELEASED" then
                         if instrument.resonance ~= 0 then
                             if note.loopSound then
-                                note.loopSound:setVolume(noteVol * resonanceMod)
+                                note.loopSound:setVolume(noteVol * resonanceMod * note.velocity)
                             elseif note.sound then
-                                note.sound:setVolume(noteVol * resonanceMod)
+                                note.sound:setVolume(noteVol * resonanceMod * note.velocity)
                             end
                         else
                             note:stop()
                         end
                     elseif note.state == "SUSTAINING" then
-                        note.loopSound:setVolume(noteVol)
+                        note.loopSound:setVolume(noteVol * note.velocity)
                     elseif note.state == "PLAYING" then
-                        note.sound:setVolume(noteVol) -- idk if this accounts for loop only samples
+                        note.sound:setVolume(noteVol * note.velocity) -- idk if this accounts for loop only samples
                     end
                 end
                 if instrument.resonance ~= 0 and note.state == "RELEASED" then
@@ -479,6 +490,8 @@ function events.render(delta)
                 end
             end
         end
+
+
     end
 end
 
@@ -773,7 +786,6 @@ function readMidi(midiSong,midiData)
     lastBufferPos = buffer:getPosition()
 
     buffer:close()
-    --logTable(midiSong,4)
 end
 
 local function getMidiData()
@@ -792,6 +804,7 @@ local function getMidiData()
         end
     end
 end
+
 
 getMidiData()
 
