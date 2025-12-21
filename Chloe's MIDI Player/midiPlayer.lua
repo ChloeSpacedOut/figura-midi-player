@@ -256,6 +256,7 @@ function song:new(rawData)
     self.state = "STOPPED"
     self.tempo = 500000
     self.activeTrack = 1 -- only used for format 2
+    self.clock = 0
     self.rawSong = rawData
     return self
 end
@@ -265,6 +266,7 @@ function song:play()
     if not next(self.tracks) then
         readMidi(self,self.rawSong)
     end
+    --logTable(self.tracks,3)
     midiPlayer.activeSong = self.ID
     local sysTime = client.getSystemTime()
     for k,v in pairs(self.tracks) do
@@ -299,14 +301,12 @@ function channel:new()
     return self
 end
 
-local toPlay = {}
-
 local l = 0
 function note:play(pitch,velocity,currentChannel,track,sysTime)
     self.state = "PLAYING"
     self = setmetatable({},note)
     self.pitch = pitch
-    self.velocity = velocity/1000
+    self.velocity = velocity/100
     self.channel = currentChannel
     self.track = track
     self.initTime = sysTime
@@ -408,8 +408,7 @@ local midiEvents = {
         activeSong:stop()
     end,
     setTempo = function(eventData,sysTime,activeTrack,trackID,activeSong)
-        activeTrack.tempo = eventData.tempo / (activeSong.ticksPerQuaterNote * 1000)
-        activeSong.defaultTempo = eventData.tempo
+        activeSong.tempo = eventData.tempo
     end,
     programChange = function(eventData,sysTime,activeTrack,trackID,activeSong)
         if not midiPlayer.channels[eventData.channel] then
@@ -420,27 +419,31 @@ local midiEvents = {
 
 }
 
+local lastSysTime = client.getSystemTime()
 function events.render(delta)
     local activeSong = midiPlayer.songs[midiPlayer.activeSong]
     if activeSong and activeSong.state == "PLAYING" then
         local sysTime = client.getSystemTime()
+        local deltaTime = sysTime - lastSysTime
+        lastSysTime = sysTime
+        activeSong.clock = activeSong.clock + (deltaTime / (activeSong.tempo / (activeSong.ticksPerQuaterNote * 1000)))
+        --log(activeSong.clock)
         for trackID, activeTrack in pairs(activeSong.tracks) do
             if not midiPlayer.tracks[trackID] then
                 midiPlayer.tracks[trackID] = {}
             end
             for i = activeTrack.sequenceIndex, #activeTrack.sequence do
-                local playbackSpeed = 1700
                 if not activeTrack.lastEventTime then
-                    activeTrack.lastEventTime = sysTime
+                    activeTrack.lastEventTime = activeSong.clock
                 end
-                local deltaTime = sysTime - activeTrack.lastEventTime
-                local targetDelta = activeTrack.sequence[i].deltaTime * (activeSong.tempo / (activeSong.ticksPerQuaterNote * playbackSpeed))
-                if deltaTime >= targetDelta then
+                local eventDeltaTime = activeSong.clock - activeTrack.lastEventTime
+                local targetDelta = activeTrack.sequence[i].deltaTime
+                if eventDeltaTime >= targetDelta then
                     local typeFunction = midiEvents[activeTrack.sequence[i].type]
                     if typeFunction then
                         typeFunction(activeTrack.sequence[i],sysTime,activeTrack,trackID,activeSong)
                     end
-                    activeTrack.lastEventTime = sysTime - (deltaTime - targetDelta)
+                    activeTrack.lastEventTime = activeSong.clock - (eventDeltaTime - targetDelta)
                 else
                     activeTrack.sequenceIndex = i
                     break
@@ -457,11 +460,11 @@ function events.render(delta)
                 local resonanceMod = 1
 
                 if instrument.resonance ~= 0 and note.state == "RELEASED" and note.instrument.Sustain then
-                    resonanceMod = math.clamp(instrument.resonance^(((client.getSystemTime() - note.releaseTime)/100)*pitchMod),0,1)
+                    resonanceMod = math.clamp(instrument.resonance^(((sysTime - note.releaseTime)/100)*pitchMod),0,1)
                 end
                 if instrument.sustain ~= 0 then
-                    noteVol = math.clamp(instrument.sustain^(((client.getSystemTime() - note.initTime)/100)*pitchMod),instrument.minVol,1)
-                    if (note.initTime + math.floor((note.duration * (1/note.soundPitch)) - 7) <= client.getSystemTime()) and (not note.loopSound) then
+                    noteVol = math.clamp(instrument.sustain^(((sysTime - note.initTime)/100)*pitchMod),instrument.minVol,1)
+                    if (note.initTime + math.floor((note.duration * (1/note.soundPitch)) - 7) <= sysTime) and (not note.loopSound) then
                         note:sustain()
                     end
                     if note.state == "RELEASED" then
