@@ -1,33 +1,60 @@
 local midiPlayer = require("midiPlayer")
+local midiParser = require("midiParser")
 local midi = require("midiAPI")
 
 local instance = {}
 instance.__index = instance
 
-function instance:new()
+function instance:new(ID,target)
     self = setmetatable({},instance)
+    self.ID = ID
     self.activeSong = nil
+    self.target = target
+    self.lastSysTime = client.getSystemTime()
+    self.lastUpdated = client.getSystemTime()
     self.songs = {}
     self.tracks = {}
     self.channels = {}
     return self
 end
 
-function instance:addSong(name,midiData)
-    self.songs[name] = midi.song:new(self,name,midiData)
+function instance:remove()
+    if self.activeSong then
+        self.songs[self.activeSong]:stop()
+    end
+    midiPlayer.instances[self.ID] = nil
 end
 
-function instance:removeSong(name)
-    log('test')
+function instance:newSong(name,midiData)
+    local song = midi.song:new(self,name,midiData)
+    self.songs[name] = song
+    return song
 end
 
-function instance:render()
-    midiPlayer.render(self)
+function instance:setTarget(target)
+    self.target = target
 end
 
-local function newInstance()
-    local newInstance = instance:new()
-    table.insert(midiPlayer.instances,newInstance)
+function instance:getTarget()
+    return self.target
+end
+
+function instance:updatePlayer()
+    midiPlayer.updatePlayer(self)
+    return self
+end
+
+function instance:updateParser()
+    midiParser.updateParser(midi)
+    return self
+end
+
+local function newInstance(ID,target)
+    local newInstance = instance:new(ID,target)
+    if midiPlayer.instances[ID] then
+        midiPlayer.instances[ID]:remove()
+    end
+    midiPlayer.instances[ID] = newInstance
     return newInstance
 end
 

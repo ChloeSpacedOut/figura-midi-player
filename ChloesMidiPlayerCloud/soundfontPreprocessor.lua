@@ -1,3 +1,4 @@
+if not host:isHost() then return end
 local soundfont = {
     soundTree = {},
     soundDuration = {}
@@ -197,4 +198,5 @@ for _,sound in pairs(soundfont.soundTree) do
     end
 end
 
-return soundfont
+local soundfontJson = toJson(soundfont)
+addScript("soundfont",[===[return(parseJson([[]===]..soundfontJson..[==[]]))]==],"both")

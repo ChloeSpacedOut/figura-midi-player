@@ -4,5 +4,9 @@
   "authors": [
     ""
   ],
-  "color": "#f16436"
+  "color": "#f16436",
+  "autoScripts": [
+    "soundfontPreprocessor",
+    "externalAPI"
+  ]
 }

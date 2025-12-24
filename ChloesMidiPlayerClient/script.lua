@@ -20,7 +20,7 @@ local function getMidiData(instance)
         local name = string.sub(fileName,1,-5)
         if suffix == ".mid" and (not instance.songs[name]) then
             local midiData = fast_read_byte_array(path)
-            instance:addSong(name,midiData)
+            instance:newSong(name,midiData)
         end
     end
 end
@@ -28,16 +28,21 @@ end
 local hasFetchedMidis = false
 function events.tick()
     if midiAPI and (not hasFetchedMidis) then
-        instance = midiAPI.newInstance()
+        instance = midiAPI.newInstance("chloe",world.getEntity(avatar:getUUID()))
         getMidiData(instance)
         hasFetchedMidis = true
-        instance.songs.spire:play()
-        log(instance)
+        instance.songs.balatro:play()
     end
 end
 
 function events.render()
     if instance then
-        instance:render()
+        instance:updatePlayer()
+    end
+end
+
+function events.tick()
+    if instance then
+        instance:updateParser()
     end
 end

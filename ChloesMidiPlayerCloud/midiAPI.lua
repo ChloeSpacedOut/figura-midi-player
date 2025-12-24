@@ -21,6 +21,8 @@ function midi.song:new(instnace,ID,rawData)
     self.instance = instnace
     self.tracks = {}
     self.state = "STOPPED"
+    self.loaded = false
+    self.loadAmount = 0
     self.tempo = 500000
     self.activeTrack = 1 -- only used for format 2
     self.clock = 0
@@ -29,10 +31,11 @@ function midi.song:new(instnace,ID,rawData)
 end
 
 function midi.song:play()
-    self.state = "PLAYING"
-    if not next(self.tracks) then
-        midiParser.readMidi(self,midi)
+    if not self.loaded then
+        midiParser.readMidi(self,true)
+        return self
     end
+    self.state = "PLAYING"
     self.instance.activeSong = self.ID
     local sysTime = client.getSystemTime()
     for k,v in pairs(self.tracks) do
@@ -43,9 +46,12 @@ function midi.song:play()
 end
 
 function midi.song:stop()
+    if not self.loaded then
+        return self
+    end
     self.instance.activeSong = nil
     self.state = "STOPPED"
-    for _,track in pairs(midiPlayer.tracks) do
+    for _,track in pairs(self.instance.tracks) do
         for _,note in pairs(track) do
             note:stop()
         end
@@ -53,9 +59,14 @@ function midi.song:stop()
     return self
 end
 
-function midi.song:read()
-    midiParser.readMidi(self,midi)
+function midi.song:load()
+    midiParser.readMidi(self)
     return self
+end
+
+function midi.song:remove()
+    self.instance.songs[self.ID]:stop()
+    self.instance.songs[self.ID] = nil
 end
 
 function midi.track:new()
@@ -102,13 +113,13 @@ function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
     local hasMain = true
     local soundSample,soundPitch,template,soundID
     if self.instrument.Main then
-        soundSample = self.instrument.Main[pitch].sample
-        soundPitch = self.instrument.Main[pitch].pitch
+        soundSample = self.instrument.Main[tostring(pitch)].sample
+        soundPitch = self.instrument.Main[tostring(pitch)].pitch
         template = self.instrument.template
         soundID = template.."Main."..soundSample
     else
-        soundSample = self.instrument.Sustain[pitch].sample
-        soundPitch = self.instrument.Sustain[pitch].pitch
+        soundSample = self.instrument.Sustain[tostring(pitch)].sample
+        soundPitch = self.instrument.Sustain[tostring(pitch)].pitch
         template = self.instrument.template
         soundID = template.."Sustain."..soundSample
         hasMain = false
@@ -118,8 +129,17 @@ function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
     if not soundfont.soundDuration[soundID] then
         soundfont.soundDuration[soundID] = utils.getOggDuration(soundID)
     end
+
+    if not instance.target then
+        return self
+    end
+
+    if not instance.target.getPos then
+        return self
+    end
+
     self.duration = soundfont.soundDuration[soundID]
-    self.sound = sounds:playSound(soundID,player:getPos(),self.velocity,soundPitch,not hasMain)
+    self.sound = sounds:playSound(soundID,instance.target:getPos(),self.velocity,soundPitch,not hasMain)
     return self
 end
 
@@ -132,13 +152,13 @@ function midi.note:sustain()
         self.state = "SUSTAINING"
     end
     local template = self.instrument.template
-    local soundSample = self.instrument.Sustain[self.pitch].sample
+    local soundSample = self.instrument.Sustain[tostring(self.pitch)].sample
     
     local soundID = template.."Sustain."..soundSample
-    local soundPitch = self.instrument.Sustain[self.pitch].pitch
+    local soundPitch = self.instrument.Sustain[tostring(self.pitch)].pitch
     if self.instrument.Main then
         self.sound:stop()
-        self.loopSound = sounds:playSound(soundID,player:getPos(),self.velocity,soundPitch,true)
+        self.loopSound = sounds:playSound(soundID,self.instance.target:getPos(),self.velocity,soundPitch,true)
     else
         self.loopSound = self.sound
     end
@@ -154,7 +174,7 @@ function midi.note:stop()
     if self.loopSound then
         self.loopSound:stop()
     end
-    self.instance.tracks[self.track][self.pitch] = nil
+    self.instance.tracks[self.track][tostring(self.pitch)] = nil
 end
 
 midi.events = {
