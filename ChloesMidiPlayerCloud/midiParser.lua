@@ -327,6 +327,7 @@ function midiParser.updateParser(midi)
 
         if bufferEndPos == buffer:getLength() then
             project.song.loaded = true
+            project.song.isLoading = false
             if project.shouldQueueSong then
                 project.song:play()
             end

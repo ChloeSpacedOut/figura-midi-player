@@ -6,7 +6,8 @@ local midiPlayer = {
 }
 
 local function progressMidi(instance,activeSong,sysTime,deltaTime)
-    activeSong.clock = activeSong.clock + (deltaTime / (activeSong.tempo / (activeSong.ticksPerQuaterNote * 1000)))
+    if activeSong.state == "PAUSED" or activeSong.state == "STOPPED" then return end
+    activeSong.clock = activeSong.clock + (deltaTime / (activeSong.tempo / (activeSong.ticksPerQuaterNote * 1000))) * activeSong.speed
     for trackID, activeTrack in pairs(activeSong.tracks) do
         if not instance.tracks[trackID] then
             instance.tracks[trackID] = {}
@@ -32,8 +33,18 @@ local function progressMidi(instance,activeSong,sysTime,deltaTime)
 end
 
 local function updateNotes(instance,sysTime)
+    local targetPos = instance.target:getPos()
     for _,channel in pairs(instance.tracks) do
         for _,note in pairs(channel) do
+            if not instance.target.getPos then
+                return
+            end
+            if note.sound then
+                note.sound:setPos(targetPos)
+            end
+            if note.loopSound then
+                note.loopSound:setPos(targetPos)
+            end
             local instrument = soundfont.instruments[note.instrument.index]
             local noteVol = 1
             local pitchMod = 1 + (note.pitch/192)

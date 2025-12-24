@@ -1,38 +1,16 @@
-local midiAPI = world.avatarVars()["b0e11a12-eada-4f28-bb70-eb8903219fe5"]
-local directory = "ChloesMidiPlayer"
+-- todo
+--[[ 
+- add song setTime (in quater notes)
+- add song getTime (in quater notes)
+- test pause
+ ]]
 local instance
 
-local function fast_read_byte_array(path)
-    local stream = file:openReadStream(path)
-    local future = stream:readAsync()
-    repeat until future:isDone()
-    return future:getValue()--[[@as string]]
-end
 
-local function getMidiData(instance)
-    if not file:isDirectory(directory) then
-        file:mkdir(directory)
-        log('"'..directory..'" folder has been created')
-    end
-    for k,fileName in pairs(file:list(directory)) do
-        local path = directory.."/"..fileName
-        local suffix = string.sub(fileName,-4,-1)
-        local name = string.sub(fileName,1,-5)
-        if suffix == ".mid" and (not instance.songs[name]) then
-            local midiData = fast_read_byte_array(path)
-            instance:newSong(name,midiData)
-        end
-    end
-end
 
 local hasFetchedMidis = false
 function events.tick()
-    if midiAPI and (not hasFetchedMidis) then
-        instance = midiAPI.newInstance("chloe",world.getEntity(avatar:getUUID()))
-        getMidiData(instance)
-        hasFetchedMidis = true
-        instance.songs.balatro:play()
-    end
+    
 end
 
 function events.render()
@@ -46,3 +24,9 @@ function events.tick()
         instance:updateParser()
     end
 end
+
+local midiPlayer = require("midiPlayer")
+local mainPage = action_wheel:newPage("mainPage")
+action_wheel:setPage(mainPage)
+
+midiPlayer:addMidiPlayer(mainPage)

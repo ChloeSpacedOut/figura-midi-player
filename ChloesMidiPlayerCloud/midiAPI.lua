@@ -21,8 +21,12 @@ function midi.song:new(instnace,ID,rawData)
     self.instance = instnace
     self.tracks = {}
     self.state = "STOPPED"
+    self.loopState = false
     self.loaded = false
+    self.isLoading = false
     self.loadAmount = 0
+    self.post = nil
+    self.speed = 1
     self.tempo = 500000
     self.activeTrack = 1 -- only used for format 2
     self.clock = 0
@@ -32,17 +36,28 @@ end
 
 function midi.song:play()
     if not self.loaded then
-        midiParser.readMidi(self,true)
+        if not self.isLoading then
+            midiParser.readMidi(self,true)
+            self.isLoading = true
+            return self
+        else
+            return self
+        end
+    end
+    if self.state == "PLAYING" then
         return self
+    elseif self.state == "PAUSED" then
+        self.state = "PLAYING"
+        return self
+    elseif self.state == "STOPPED" then
+        self.state = "PLAYING"
+        self.instance.activeSong = self.ID
+        for _,track in pairs(self.tracks) do
+            track.sequenceIndex = 1
+            track.lastEventTime = nil
+        end
+        return self 
     end
-    self.state = "PLAYING"
-    self.instance.activeSong = self.ID
-    local sysTime = client.getSystemTime()
-    for k,v in pairs(self.tracks) do
-        v.sequenceIndex = 1
-        v.lastEventTime = nil
-    end
-    return self
 end
 
 function midi.song:stop()
@@ -58,6 +73,47 @@ function midi.song:stop()
     end
     return self
 end
+
+function midi.song:loop(bool)
+    self.loopState = bool
+    return self
+end
+
+function midi.song:setLoop(bool)
+    self.loopState = bool
+    return self
+end
+
+function midi.song:getLoop()
+    return self.loopState
+end
+
+function midi.song:setPost(funct)
+    self.post = funct
+    return self
+end
+
+function midi.song:getPost()
+    return self.post
+end
+
+function midi.song:setSpeed(speed)
+    self.speed = speed
+    return self
+end
+
+function midi.song:getSpeed()
+    return self.speed
+end
+
+function midi.song:pause()
+    if not self.loaded then
+        return self
+    end
+    self.state = "PAUSED"
+    return self
+end
+
 
 function midi.song:load()
     midiParser.readMidi(self)
@@ -196,7 +252,18 @@ midi.events = {
         end
     end,
     endOfTrack = function(instance,eventData,sysTime,activeTrack,trackID,activeSong)
-        activeSong:stop()
+        if activeSong.loopState then
+            if activeSong.post then
+                activeSong:post(true)
+            end
+            activeSong:stop()
+            activeSong:play()
+        else
+            if activeSong.post then
+                activeSong:post(false)
+            end
+            activeSong:stop()
+        end
     end,
     setTempo = function(instance,eventData,sysTime,activeTrack,trackID,activeSong)
         activeSong.tempo = eventData.tempo
