@@ -35,6 +35,9 @@ function midi.song:new(instnace,ID,rawData)
 end
 
 function midi.song:play()
+    if self.instance.activeSong and (self.instance.activeSong ~= self.ID) then
+        self.instance.songs[self.instance.activeSong]:stop()
+    end
     if not self.loaded then
         if not self.isLoading then
             midiParser.readMidi(self,true)
@@ -111,6 +114,16 @@ function midi.song:pause()
         return self
     end
     self.state = "PAUSED"
+    for _,track in pairs(self.instance.tracks) do
+        for _,note in pairs(track) do
+            if note.sound then
+                note.sound:setVolume(0)
+            end
+            if note.loopSound then
+                note.loopSound:setVolume(0)
+            end
+        end
+    end
     return self
 end
 
@@ -226,7 +239,9 @@ function midi.note:release(sysTime)
 end
 
 function midi.note:stop()
-    self.sound:stop()
+    if self.sound then
+        self.sound:stop()
+    end
     if self.loopSound then
         self.loopSound:stop()
     end

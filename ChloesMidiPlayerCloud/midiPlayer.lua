@@ -101,8 +101,8 @@ function midiPlayer.updatePlayer(instance)
     local activeSong = instance.songs[instance.activeSong]
     if activeSong and activeSong.state == "PLAYING" then
         progressMidi(instance,activeSong,sysTime,deltaTime)
+        updateNotes(instance,sysTime)
     end
-    updateNotes(instance,sysTime)
 end
 
 return midiPlayer

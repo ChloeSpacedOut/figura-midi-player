@@ -2,6 +2,8 @@
 --[[ 
 - add song setTime (in quater notes)
 - add song getTime (in quater notes)
+- add channel volume
+- channel pitch
 - test pause
  ]]
 local instance
@@ -11,18 +13,6 @@ local instance
 local hasFetchedMidis = false
 function events.tick()
     
-end
-
-function events.render()
-    if instance then
-        instance:updatePlayer()
-    end
-end
-
-function events.tick()
-    if instance then
-        instance:updateParser()
-    end
 end
 
 local midiPlayer = require("midiPlayer")

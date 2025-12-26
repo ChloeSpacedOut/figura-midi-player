@@ -6,7 +6,8 @@ local midiPlayer = {
     midiAPI = world.avatarVars()["b0e11a12-eada-4f28-bb70-eb8903219fe5"],
     instance = nil,
     songs = {},
-    selectedSong = 1
+    selectedSong = 1,
+    pageSize = 20
 }
 
 local actions = {}
@@ -43,16 +44,43 @@ local function getMidiData(instance)
 end
 
 local function generateSongSelector()
-    local songTitle = ""
+    local songTitle = "song selector \n"
+    local selectedPage = math.floor((midiPlayer.selectedSong - 1) / midiPlayer.pageSize)
     for k,v in pairs(midiPlayer.songs) do
-        if k == midiPlayer.selectedSong then
-            songTitle = songTitle .. "§r→ "  .. v .. "\n"
-        else
-            songTitle = songTitle .. ":cross_mark: ".. "§c" .. v .. "\n"
+        local currentPage = math.floor((k - 1) / midiPlayer.pageSize)
+        if currentPage == selectedPage then
+            if k == midiPlayer.selectedSong then
+                songTitle = songTitle .. "§r→ "  .. v .. "\n"
+            else
+                songTitle = songTitle .. ":cross_mark: ".. "§c" .. v .. "\n"
+            end
         end
-        
     end
+    local lastPage = math.floor((#midiPlayer.songs - 1) / midiPlayer.pageSize)
+    songTitle = songTitle .. "§rpage " .. selectedPage + 1 .. " of " .. lastPage + 1
     actions.songs:setTitle(songTitle)
+end
+
+function events.MOUSE_PRESS(key,state,bitmast)
+    local actionWheelOpen = action_wheel:isEnabled()
+    local currentPage = action_wheel:getCurrentPage():getTitle()
+    local selectedAction = action_wheel:getSelected()
+    if actionWheelOpen and currentPage == "midiPlayerPage" and selectedAction == 3 then
+        if state == 1 then
+            if key == 0 then
+                local selectedSong = midiPlayer.instance.songs[midiPlayer.songs[midiPlayer.selectedSong]]
+                if selectedSong.state == "STOPPED" or selectedSong.state == "PAUSED" then
+                    selectedSong:play()
+                elseif selectedSong.state == "PLAYING" then
+                    selectedSong:pause()
+                end
+            elseif key == 1 then
+                if midiPlayer.instance.activeSong then
+                    midiPlayer.instance.songs[midiPlayer.instance.activeSong]:stop()
+                end
+            end
+        end
+    end
 end
 
 actions.back = midiPlayer.page:newAction()
@@ -87,6 +115,18 @@ function events.tick()
         end
         table.sort(midiPlayer.songs)
         generateSongSelector()
+    end
+end
+
+function events.render()
+    if midiPlayer.instance then
+        midiPlayer.instance:updatePlayer()
+    end
+end
+
+function events.tick()
+    if midiPlayer.instance then
+        midiPlayer.instance:updateParser()
     end
 end
 
