@@ -5,6 +5,8 @@
 - add channel volume
 - channel pitch
 - test pause
+- clear channels at the start of a new song
+- check if all channels have ended before song end
  ]]
 local instance
 

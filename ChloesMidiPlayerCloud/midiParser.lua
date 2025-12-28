@@ -252,6 +252,7 @@ end
 function midiParser.updateParser(midi)
     for _,project in pairs(midiParser.projects) do
         local buffer = project.buffer
+        local bufferLength = buffer:getLength()
         project.currentChunk = project.currentChunk + 1
         -- read midi header
         if not project.hasReadHeader then
@@ -284,13 +285,13 @@ function midiParser.updateParser(midi)
             end
         end
         -- read track
-        while ((buffer:getPosition() - project.currentTrack.eventStartPos) < project.currentTrack.length) and (buffer:getPosition() < (project.currentChunk * project.chunkSize)) do
-            project.song.loadAmount = buffer:getPosition()/buffer:getLength()
+        while ((buffer:getPosition() - project.currentTrack.eventStartPos) < project.currentTrack.length) and (buffer:getPosition() < (project.currentChunk * project.chunkSize) and (buffer:getPosition() ~= bufferLength)) do
+            project.song.loadAmount = buffer:getPosition()/bufferLength
             local startPos = buffer:getPosition()
             repeat
                 local val = buffer:read()
                 local signBit = bit32.extract(val,7)
-            until signBit == 0
+            until signBit == 0 or buffer:getPosition() == bufferLength
             local endPos = buffer:getPosition()
             buffer:setPosition(startPos)
             local deltaBits = readBits(buffer,endPos - startPos)
@@ -325,7 +326,7 @@ function midiParser.updateParser(midi)
         end
         project.lastBufferPos = buffer:getPosition()
 
-        if bufferEndPos == buffer:getLength() then
+        if bufferEndPos == bufferLength then
             project.song.loaded = true
             project.song.isLoading = false
             if project.shouldQueueSong then
