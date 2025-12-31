@@ -290,11 +290,10 @@ end
 
 function numToVarLengthInt(num)
     local numBits = math.max(1, select(2, math.frexp(num)))
-    --local numBytesBase = math.ceil(numBits / 8)
     local numBytes = math.ceil(numBits / 7)
     local bits = toBits(num,numBits)
     for i = 1, (numBytes - 1) do
-        i = (numBytes - i) * 8
+        i = (numBytes - i) * 7 + 1
         if i ~= 8 then 
             table.insert(bits,i,1)
         else   
@@ -378,7 +377,7 @@ local function compressData(decompressedData)
             readBytes = currentBytes
         end
         if buffer:getPosition() == bufferLength and readBytes ~= "" then
-            -- readBytes ~= "" may not account for the last byte
+            -- 'readBytes ~= ""' may not account for the last byte
             patternCount[currentBytes] = patternCount[currentBytes] + 1
             table.insert(patternOrder,existingPatterns[currentBytes])
         end
@@ -420,7 +419,7 @@ function events.MOUSE_PRESS(key,state,bitmast)
                 if not selectedSongLocal.isPinged then
                     table.insert(midiPlayer.pingQueue,selectedSongLocal.ID)
                     selectedSongLocal.compressedData = compressData(selectedSongLocal.rawData)
-                    selectedSongLocal.totalChunks = math.floor(string.len(selectedSongLocal.compressedData) / midiPlayer.pingSize)
+                    selectedSongLocal.totalChunks = math.ceil(string.len(selectedSongLocal.compressedData) / midiPlayer.pingSize)
                 else
                     if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
                         pings.updateSong(selectedSongPinged.ID,1)

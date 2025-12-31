@@ -271,6 +271,7 @@ function midiParser.updateParser(midi)
             else
                 log("Midi file header was invalid")
                 project:remove()
+                return
             end
         
         end
@@ -308,11 +309,12 @@ function midiParser.updateParser(midi)
                 buffer:setPosition(buffer:getPosition() - 1)
                 local nextBits = readBits(buffer,1)
                 local statusByte = bitsToNum(nextBits,4,7)
-                --log(statusByte,nextBits)
                 if midiParser.voiceMessages[statusByte] then
                     midiParser.voiceMessages[statusByte](buffer,project.currentTrack,deltaTime,nextBits)
                 else
                     log("Failed reading byte " .. string.format("%X",buffer:getPosition() - 1).." with value " .. string.format("%X",nextByte))
+                    project:remove()
+                    return
                 end
             end
         end
