@@ -7,6 +7,7 @@
 - test pause
 - clear channels at the start of a new song
 - check if all channels have ended before song end
+- set ping limit being bellow size of name bytes + ping name bytes must be considered
  ]]
 local instance
 
@@ -19,7 +20,7 @@ end
 
 if not host:isHost() then return end
 
-local midiPlayer = require("midiPlayer")
+local midiPlayer = require("midiPlayerClient")
 local mainPage = action_wheel:newPage("mainPage")
 action_wheel:setPage(mainPage)
 

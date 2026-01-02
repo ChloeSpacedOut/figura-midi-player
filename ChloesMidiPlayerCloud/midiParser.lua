@@ -238,7 +238,7 @@ function midiParser.project:new(midiSong,shouldQueueSong)
     self.buffer:setPosition(0)
     self.lastBufferPos = 0
     self.currentChunk = 0
-    self.chunkSize = 1000
+    self.chunkSize = 500
     self.hasReadHeader = false
     self.currentTrack = nil
     return self
@@ -254,6 +254,10 @@ function midiParser.updateParser(midi)
         local buffer = project.buffer
         local bufferLength = buffer:getLength()
         project.currentChunk = project.currentChunk + 1
+        if buffer:isClosed() then
+            project:remove()
+            break
+        end
         -- read midi header
         if not project.hasReadHeader then
             if buffer:readString(4) == "MThd" then
@@ -313,8 +317,6 @@ function midiParser.updateParser(midi)
                     midiParser.voiceMessages[statusByte](buffer,project.currentTrack,deltaTime,nextBits)
                 else
                     log("Failed reading byte " .. string.format("%X",buffer:getPosition() - 1).." with value " .. string.format("%X",nextByte))
-                    project:remove()
-                    return
                 end
             end
         end

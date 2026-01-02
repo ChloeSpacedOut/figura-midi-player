@@ -91,35 +91,69 @@ local function readVariableLengthInt(buffer,bufferLength)
     local endPos = buffer:getPosition()
     buffer:setPosition(startPos)
     local bits = readBits(buffer,endPos - startPos)
-    return variableLengthBitsToNum(bits)
+    local num = variableLengthBitsToNum(bits)
+    return num
 end
 
-local function decompressData(compressedData)
-    local buffer = data:createBuffer()
-    buffer:writeByteArray(compressedData)
-    buffer:setPosition(0)
-    local bufferLength = buffer:getLength()
-    local patternIndexEnd = readVariableLengthInt(buffer,bufferLength) + buffer:getPosition()
-    local patternIndex = {}
-    for i = 0,255 do
-        table.insert(patternIndex,string.char(i))
-    end
-    repeat
-        local index = readVariableLengthInt(buffer,bufferLength)
-        local numBytes = readVariableLengthInt(buffer,bufferLength)
-        local bytes = buffer:readByteArray(numBytes)
-        patternIndex[index] = bytes
-    until patternIndexEnd ==  buffer:getPosition() or bufferLength == buffer:getPosition()
+midiPlayer.decompressProject = {}
+midiPlayer.decompressProject.__index = midiPlayer.decompressProject
 
-    local decompressedData = ""
-    repeat
-        local index = readVariableLengthInt(buffer,bufferLength)
-        if patternIndex[index] then
-            decompressedData = decompressedData .. patternIndex[index]
+function midiPlayer.decompressProject:new(ID,compressedData)
+    self = setmetatable({},midiPlayer.decompressProject)
+    self.ID = ID
+    self.buffer = data:createBuffer()
+    self.buffer:writeByteArray(compressedData)
+    self.buffer:setPosition(0)
+    self.bufferLength = self.buffer:getLength()
+    self.patternIndexEnd = readVariableLengthInt(self.buffer,self.bufferLength) + self.buffer:getPosition()
+    self.patternIndex = {}
+    self.hasReadPatternIndex = false
+    self.hasReadPatterns = false
+    self.currentChunk = 0
+    self.chunkSize = 1000
+    self.decompressedData = ""
+    for i = 0,255 do
+        table.insert(self.patternIndex,string.char(i))
+    end
+    return self
+end
+
+local decompressProjects = {}
+
+function midiPlayer.decompressProject:remove()
+    self.buffer:close()
+    decompressProjects[self.ID] = nil
+end
+
+function events.tick()
+    for _,project in pairs(decompressProjects) do
+        local buffer = project.buffer
+        project.currentChunk = project.currentChunk + 1
+        if not project.hasReadPatternIndex then
+            repeat
+                local index = readVariableLengthInt(buffer,project.bufferLength)
+                local numBytes = readVariableLengthInt(buffer,project.bufferLength)
+                local bytes = buffer:readByteArray(numBytes)
+                project.patternIndex[index] = bytes
+                if buffer:getPosition() == project.patternIndexEnd then
+                    project.hasReadPatternIndex = true
+                end
+            until (buffer:getPosition() == project.patternIndexEnd) or (buffer:getPosition() >= (project.currentChunk * project.chunkSize)) or (buffer:getPosition() == project.bufferLength)
+        elseif not project.hasReadPatterns then
+            repeat
+                local index = readVariableLengthInt(buffer,project.bufferLength)
+                if project.patternIndex[index] then
+                   project.decompressedData = project.decompressedData .. project.patternIndex[index]
+                end
+                if project.bufferLength == buffer:getPosition() then
+                    midiPlayer.instance.songs[project.ID].rawSong = project.decompressedData
+                    project.hasReadPatterns = true
+                    project:remove()
+                    break
+                end
+            until project.bufferLength == buffer:getPosition()
         end
-    until bufferLength == buffer:getPosition()
-    buffer:close()
-    return decompressedData
+    end
 end
 
 function pings.sendSong(ID,currentChunk,isLastChunk,data)
@@ -134,7 +168,8 @@ function pings.sendSong(ID,currentChunk,isLastChunk,data)
         for _,chunk in ipairs(midiPlayer.instance.songs[ID].songChunks) do
             compressedSong = compressedSong .. chunk
         end
-        midiPlayer.instance.songs[ID].rawSong = decompressData(compressedSong)
+        decompressProjects[ID] = midiPlayer.decompressProject:new(ID,compressedSong)
+        midiPlayer.pingQueue[1] = nil
     end
 end
 
@@ -209,7 +244,7 @@ actions.settingsBack = midiPlayer.settings:newAction()
 actions.pingSize = midiPlayer.settings:newAction()
     :setTitle("ping size \n" .. tostring(midiPlayer.pingSize) .. " b/s")
     :setOnScroll(function(scroll) 
-        midiPlayer.pingSize = midiPlayer.pingSize + (scroll * 5)
+        midiPlayer.pingSize = math.max(0,midiPlayer.pingSize + (scroll * 5))
         config:save("pingSize",midiPlayer.pingSize)
         actions.pingSize:setTitle("ping size \n" .. tostring(midiPlayer.pingSize) .. " b/s")
     end)
@@ -326,85 +361,146 @@ function numToVarLengthInt(num)
     return string.reverse(val)
 end
 
-local function compressData(decompressedData)
-    local patternIndex = {}
-    local existingPatterns = {}
+midiPlayer.compressProject = {}
+midiPlayer.compressProject.__index = midiPlayer.compressProject
+
+function midiPlayer.compressProject:new(ID,decompressedData)
+    self = setmetatable({},midiPlayer.compressProject)
+    self.ID = ID
+    self.patternIndex = {}
+    self.patternIndexLength = nil
+    self.existingPatterns = {}
     for i = 0,255 do
-        table.insert(patternIndex,string.char(i))
-        existingPatterns[string.char(i)] = #patternIndex
+        table.insert(self.patternIndex,string.char(i))
+        self.existingPatterns[string.char(i)] = #self.patternIndex
     end
-    local buffer = data:createBuffer()
-    buffer:writeByteArray(decompressedData)
-    buffer:setPosition(0)
-    local bufferLength = buffer:getLength()
-    local readBytes = ""
-    repeat
-        local readBye = buffer:readByteArray(1)
-        local currentBytes = readBytes .. readBye
-        if not existingPatterns[currentBytes] then
-            table.insert(patternIndex,currentBytes)
-            existingPatterns[currentBytes] = #patternIndex
-            readBytes = ""
-        else
-            readBytes = currentBytes
-        end
-        if buffer:getPosition() == bufferLength then
-            table.insert(patternIndex,currentBytes)
-            existingPatterns[currentBytes] = #patternIndex
-        end
-    until buffer:getPosition() == bufferLength
-    buffer:setPosition(0)
-    
-    local patternCount = {}
+    self.buffer = data:createBuffer()
+    self.buffer:writeByteArray(decompressedData)
+    self.buffer:setPosition(0)
+    self.bufferLength = self.buffer:getLength()
+    self.readBytes = ""
+    self.patternCount = {}
+    self.patternOrder = {}
+    self.compressedData = ""
+    self.patternIndexString = ""
+    self.patternOrderString = ""
+    self.currentChunk = 0
+    self.chunkSize = 1000
+    self.hasGeneratedPatterns = false
+    self.hasReadPatterns = false
+    self.hasPurgedEmptys = false
+    self.hasGeneratedIndexString = false
+    self.hasGeneratedOrderString = false
+    return self
+end
 
-    for k,v in pairs(patternIndex) do
-        patternCount[v] = 0
-    end
+local compressProjects = {}
 
-    local patternOrder = {}
-    readBytes = ""
-    repeat
-        local currentBytes = readBytes ..buffer:readByteArray(1)
-        if not existingPatterns[currentBytes] then
-            patternCount[readBytes] = patternCount[readBytes] + 1
-            table.insert(patternOrder,existingPatterns[readBytes])
-            local bufferPos = buffer:getPosition()
-            if bufferPos ~= bufferLength then
-                buffer:setPosition(bufferPos - 1)
+function midiPlayer.compressProject:remove()
+    self.buffer:close()
+    compressProjects[self.ID] = nil
+end
+
+function events.tick()
+    for _,project in pairs(compressProjects) do
+        local buffer = project.buffer
+        project.currentChunk = project.currentChunk + 1
+        if not project.hasGeneratedPatterns then
+            repeat
+                local readBye = buffer:readByteArray(1)
+                local currentBytes = project.readBytes .. readBye
+                if not project.existingPatterns[currentBytes] then
+                    table.insert(project.patternIndex, currentBytes)
+                    project.existingPatterns[currentBytes] = #project.patternIndex
+                    project.readBytes = ""
+                else
+                    project.readBytes = currentBytes
+                end
+                if buffer:getPosition() == project.bufferLength then
+                    table.insert(project.patternIndex, currentBytes)
+                    project.existingPatterns[currentBytes] = #project.patternIndex
+                end
+                if buffer:getPosition() == project.bufferLength then
+                    buffer:setPosition(0)
+                    project.currentChunk = 0
+                    project.readBytes = ""
+                    for k,v in pairs(project.patternIndex) do
+                        project.patternCount[v] = 0
+                    end
+                    project.hasGeneratedPatterns = true
+                end
+            until (buffer:getPosition() == project.bufferLength) or (buffer:getPosition() >= (project.currentChunk * project.chunkSize))
+        elseif not project.hasReadPatterns then
+            repeat
+                local currentBytes = project.readBytes ..buffer:readByteArray(1)
+                if not project.existingPatterns[currentBytes] then
+                    project.patternCount[project.readBytes] = project.patternCount[project.readBytes] + 1
+                    table.insert(project.patternOrder, project.existingPatterns[project.readBytes])
+                    local bufferPos = buffer:getPosition()
+                    if bufferPos ~= project.bufferLength then
+                        buffer:setPosition(bufferPos - 1)
+                    end
+                    project.readBytes = ""
+                else
+                    project.readBytes = currentBytes
+                end
+                if buffer:getPosition() == project.bufferLength and project.readBytes ~= "" then
+                    -- 'readBytes ~= ""' may not account for the last byte
+                    project.patternCount[currentBytes] = project.patternCount[currentBytes] + 1
+                    table.insert(project.patternOrder, project.existingPatterns[currentBytes])
+                    project.hasReadPatterns = true
+                    project.currentChunk = 0
+                    project.patternIndexLength = #project.patternIndex
+                    for i = 0, 255 do
+                        project.patternIndex[i] = nil
+                    end
+                end
+            until (buffer:getPosition() == project.bufferLength) or (buffer:getPosition() >= (project.currentChunk * project.chunkSize))
+        elseif not project.hasPurgedEmptys then
+            for i = (project.currentChunk - 1) * project.chunkSize + 1,project.currentChunk * project.chunkSize do
+                if i <= project.patternIndexLength then
+                    if project.patternIndex[i] then
+                        if project.patternCount[project.patternIndex[i]] == 0 then
+                            project.patternIndex[i] = nil
+                        end
+                    end
+                else
+                    project.hasPurgedEmptys = true
+                    project.currentChunk = 0
+                    break
+                end
             end
-            readBytes = ""
-        else
-            readBytes = currentBytes
+        elseif not project.hasGeneratedIndexString then
+            local chunkSize = math.floor(project.chunkSize / 16)
+            for i = (project.currentChunk - 1) * chunkSize + 1,project.currentChunk * chunkSize do
+                if i <= project.patternIndexLength then
+                    if project.patternIndex[i] then
+                        local pattern = project.patternIndex[i]
+                        project.patternIndexString = project.patternIndexString .. numToVarLengthInt(i) .. numToVarLengthInt(string.len(pattern)) .. pattern
+                    end
+                else
+                    project.hasGeneratedIndexString = true
+                    project.currentChunk = 0
+                    break
+                end
+            end
+        elseif not project.hasGeneratedOrderString then
+            local chunkSize = math.floor(project.chunkSize / 16)
+            for i = (project.currentChunk - 1) * chunkSize + 1,project.currentChunk * chunkSize do
+                if i <= #project.patternOrder then
+                    project.patternOrderString = project.patternOrderString .. numToVarLengthInt(project.patternOrder[i])
+                else
+                    project.hasGeneratedOrderString = true
+                    local compressedData = numToVarLengthInt(string.len(project.patternIndexString)) .. project.patternIndexString .. project.patternOrderString
+                    local song = midiPlayer.songs[project.ID]
+                    table.insert(midiPlayer.pingQueue,song.ID)
+                    song.compressedData = compressedData
+                    song.totalChunks = math.ceil(string.len(compressedData) / midiPlayer.pingSize)
+                    project:remove()
+                end
+            end
         end
-        if buffer:getPosition() == bufferLength and readBytes ~= "" then
-            -- 'readBytes ~= ""' may not account for the last byte
-            patternCount[currentBytes] = patternCount[currentBytes] + 1
-            table.insert(patternOrder,existingPatterns[currentBytes])
-        end
-    until buffer:getPosition() == bufferLength
-
-    for i = 0, 255 do
-        patternIndex[i] = nil
     end
-
-    for pattern,count in pairs(patternCount) do
-        if count == 0 then
-            patternIndex[existingPatterns[pattern]] = nil
-        end
-    end
-
-    local compressedData = ""
-    local patternIndexString = ""
-    local patternOrderString = ""
-    for k,v in pairs(patternIndex) do
-        patternIndexString = patternIndexString .. numToVarLengthInt(k) .. numToVarLengthInt(string.len(v)) .. v
-    end
-    for k,v in pairs(patternOrder) do
-        patternOrderString = patternOrderString .. numToVarLengthInt(v)
-    end
-    compressedData = numToVarLengthInt(string.len(patternIndexString)) .. patternIndexString .. patternOrderString
-    buffer:close()
-    return compressedData
 end
 
 function events.MOUSE_PRESS(key,state,bitmast)
@@ -417,9 +513,8 @@ function events.MOUSE_PRESS(key,state,bitmast)
             local selectedSongPinged = midiPlayer.instance.songs[midiPlayer.songIndex[midiPlayer.selectedSong]]
             if key == 0 then
                 if not selectedSongLocal.isPinged then
-                    table.insert(midiPlayer.pingQueue,selectedSongLocal.ID)
-                    selectedSongLocal.compressedData = compressData(selectedSongLocal.rawData)
-                    selectedSongLocal.totalChunks = math.ceil(string.len(selectedSongLocal.compressedData) / midiPlayer.pingSize)
+                    selectedSongLocal.pingSize = midiPlayer.pingSize
+                    compressProjects[selectedSongLocal.ID] = midiPlayer.compressProject:new(selectedSongLocal.ID,selectedSongLocal.rawData)
                 else
                     if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
                         pings.updateSong(selectedSongPinged.ID,1)
