@@ -1,3 +1,5 @@
+--#REGION global
+--#REGION setup
 local midiAvatar = "b0e11a12-eada-4f28-bb70-eb8903219fe5"
 local directory = "ChloesMidiPlayer"
 
@@ -17,7 +19,8 @@ local midiPlayer = {
     pingSize = 450,
     limitRoleback = 5
 }
-
+--#ENDREGION
+--#REGION midi player cloud setup
 midiPlayer.avatarID[1],midiPlayer.avatarID[2],midiPlayer.avatarID[3],midiPlayer.avatarID[4] = client.uuidToIntArray(midiAvatar)
 
 local midiPlayerHeadItem = world.newItem([=[minecraft:player_head{display:{Name:'{"text":"midiHead"}'},SkullOwner:{Id:[I;]=]..midiPlayer.avatarID[1]..","..midiPlayer.avatarID[2]..","..midiPlayer.avatarID[3]..","..midiPlayer.avatarID[4]..[=[]}}]=])
@@ -54,7 +57,8 @@ function events.tick()
         end
     end
 end
-
+--#ENDREGION
+--#REGION decompress midi
 local function readBits(buffer,numBytes)
     local bufferPos = buffer:getPosition()
     local bits = {}
@@ -118,15 +122,15 @@ function midiPlayer.decompressProject:new(ID,compressedData)
     return self
 end
 
-local decompressProjects = {}
+midiPlayer.decompressProjects = {}
 
 function midiPlayer.decompressProject:remove()
     self.buffer:close()
-    decompressProjects[self.ID] = nil
+    midiPlayer.decompressProjects[self.ID] = nil
 end
 
 function events.tick()
-    for _,project in pairs(decompressProjects) do
+    for _,project in pairs(midiPlayer.decompressProjects) do
         local buffer = project.buffer
         project.currentChunk = project.currentChunk + 1
         if not project.hasReadPatternIndex then
@@ -149,13 +153,18 @@ function events.tick()
                     midiPlayer.instance.songs[project.ID].rawSong = project.decompressedData
                     project.hasReadPatterns = true
                     project:remove()
+                    midiPlayer.instance.songs[project.ID]:load()
+                    if host:isHost() then
+                        midiPlayer.songs[project.ID].state = "PARSING"
+                    end
                     break
                 end
-            until project.bufferLength == buffer:getPosition()
+            until project.bufferLength == buffer:getPosition() or (buffer:getPosition() >= (project.currentChunk * project.chunkSize))
         end
     end
 end
-
+--#ENDREGION
+--#REGION pings
 function pings.sendSong(ID,currentChunk,isLastChunk,data)
     if not midiPlayer.instance then return end
     if not midiPlayer.instance.songs[ID] then
@@ -168,8 +177,7 @@ function pings.sendSong(ID,currentChunk,isLastChunk,data)
         for _,chunk in ipairs(midiPlayer.instance.songs[ID].songChunks) do
             compressedSong = compressedSong .. chunk
         end
-        decompressProjects[ID] = midiPlayer.decompressProject:new(ID,compressedSong)
-        midiPlayer.pingQueue[1] = nil
+        midiPlayer.decompressProjects[ID] = midiPlayer.decompressProject:new(ID,compressedSong)
     end
 end
 
@@ -183,9 +191,11 @@ function pings.updateSong(ID,action)
         midiPlayer.instance.songs[ID]:stop()
     end
 end
-
+--#ENDREGION
+--#ENDREGION
+--#REGION host only
+--#REGION setup
 if not host:isHost() then return end
-
 config:setName("chloesMidiPlayer")
 local pingSize = config:load("pingSize")
 if pingSize then
@@ -195,18 +205,85 @@ local limitRoleback = config:load("limitRoleback")
 if limitRoleback then
     midiPlayer.limitRoleback = limitRoleback
 end
+function events.tick()
+    if midiPlayer.instance then
+        for k,v in pairs(midiPlayer.instance.songs) do
+            if v.loaded then
+                midiPlayer.songs[v.ID].state = "GLOBAL"
+            end
+        end
+    end
+end
+--#ENDREGION
+--#REGION action wheel
+local uploadStateLookup = {
+    LOCAL = function(name)
+        return ":cross_mark:§c "
+    end,
+    COMPRESSING = function(name)
+        local project = midiPlayer.compressProjects[name]
+        local progress = 0
+        if not project.hasGeneratedPatterns then
+            progress = math.floor(((project.currentChunk * project.chunkSize) / project.bufferLength) * 25)
+        elseif not project.hasReadPatterns then
+            progress = 25 + math.floor(((project.currentChunk * project.chunkSize) / project.bufferLength) * 25)
+        elseif not project.hasPurgedEmptys then
+            progress = 50 + math.floor(((project.currentChunk * project.chunkSize) / project.patternIndexLength) * 5)
+        elseif not project.hasGeneratedIndexString then
+            local chunkSize = math.floor(project.chunkSize / 16)
+            progress = 55 + math.floor(((project.currentChunk * chunkSize) / project.patternIndexLength) * 22)
+        elseif not project.hasGeneratedOrderString then
+            local chunkSize = math.floor(project.chunkSize / 16)
+            progress = 77 + math.floor(((project.currentChunk * chunkSize) / #project.patternOrder) * 23)
+        end
+        return ":loading: :envelope:§e [" .. progress .. "%] "
+    end,
+    QUEUED = function(name)
+        return ":0h:§7 "
+    end,
+    UPLOADING = function(name)
+        local song = midiPlayer.songs[name]
+        return ":loading: :www:§b [" .. math.floor((song.currentChunk / song.totalChunks) * 100) .. "%] "
+    end,
+    DECOMPRESSING = function(name)
+        local project = midiPlayer.decompressProjects[name]
+        local progress = math.floor(((project.currentChunk * project.chunkSize) / project.bufferLength) * 100)
+        return ":loading: :folder_paper:§e [" .. progress .. "%] "
+    end,
+    PARSING = function(name)
+        local project = midiPlayer.instance.midiParser.projects[name]
+        local progress = math.floor(((project.currentChunk * project.chunkSize) / project.buffer:getLength()) * 100)
+        return ":loading: :cd:§e [" .. progress .. "%] "
+    end,
+    GLOBAL = function(name)
+        return ":checkmark:§a "
+    end
+}
 
+local playStateLookup = {
+    PLAYING = "§d:music2: ▶ ",
+    PAUSED = "§d:music2: ⏸ "
+}
 
 local function generateSongSelector()
     local songTitle = "song selector \n"
     local selectedPage = math.floor((midiPlayer.selectedSong - 1) / midiPlayer.pageSize)
-    for k,v in pairs(midiPlayer.songIndex) do
+    for k,name in pairs(midiPlayer.songIndex) do
+        local uploadState = midiPlayer.songs[name].state
+        local playState
+        if midiPlayer.instance and midiPlayer.instance.songs[name] then
+            playState = midiPlayer.instance.songs[name].state
+        end
+        local stateIndicator = uploadStateLookup[uploadState](name)
+        if playStateLookup[playState] then
+            stateIndicator = playStateLookup[playState]
+        end
         local currentPage = math.floor((k - 1) / midiPlayer.pageSize)
         if currentPage == selectedPage then
             if k == midiPlayer.selectedSong then
-                songTitle = songTitle .. "§r→ "  .. v .. "\n"
+                songTitle = songTitle .. "§r→ " .. stateIndicator .. "§r§n" .. name .. "\n§r"
             else
-                songTitle = songTitle .. ":cross_mark: ".. "§c" .. v .. "\n"
+                songTitle = songTitle .. "   " .. stateIndicator .. name  .. "\n"
             end
         end
     end
@@ -257,6 +334,23 @@ actions.limitRoleback = midiPlayer.settings:newAction()
         actions.limitRoleback:setTitle("limit roleback \n" .. tostring(midiPlayer.limitRoleback) .. " pings")
     end)
 
+function midiPlayer:addMidiPlayer(page)
+    midiPlayer.returnPage = page
+    actions.midiPlayer = page:newAction()
+        :setTitle("Midi Player\nERROR: Midi player avatar is not loaded")
+end
+
+
+function events.tick()
+    local actionWheelOpen = action_wheel:isEnabled()
+    local currentPage = action_wheel:getCurrentPage():getTitle()
+    local selectedAction = action_wheel:getSelected()
+    if actionWheelOpen and currentPage == "midiPlayerPage" and selectedAction == 3 then
+        generateSongSelector()
+    end
+end
+--#ENDREGION
+--#REGION song setup
 midiPlayer.song = {}
 midiPlayer.song.__index = midiPlayer.song
 
@@ -264,20 +358,14 @@ function midiPlayer.song:new(name,rawData)
     self = setmetatable({},midiPlayer.song)
     self.ID = name
     self.rawData = rawData
-    self.isPinged = false
+    self.state = "LOCAL"
     self.currentChunk = 0
     self.nameLength = string.len(name)
     self.pingSize = midiPlayer.pingSize
     return self
 end
-
-
-function midiPlayer:addMidiPlayer(page)
-    midiPlayer.returnPage = page
-    actions.midiPlayer = page:newAction()
-        :setTitle("Midi Player\nERROR: Midi player avatar is not loaded")
-end
-
+--#ENDREGION
+--#REGION compress midi
 local function fast_read_byte_array(path)
     local stream = file:openReadStream(path)
     local future = stream:readAsync()
@@ -394,15 +482,15 @@ function midiPlayer.compressProject:new(ID,decompressedData)
     return self
 end
 
-local compressProjects = {}
+midiPlayer.compressProjects = {}
 
 function midiPlayer.compressProject:remove()
     self.buffer:close()
-    compressProjects[self.ID] = nil
+    midiPlayer.compressProjects[self.ID] = nil
 end
 
 function events.tick()
-    for _,project in pairs(compressProjects) do
+    for _,project in pairs(midiPlayer.compressProjects) do
         local buffer = project.buffer
         project.currentChunk = project.currentChunk + 1
         if not project.hasGeneratedPatterns then
@@ -497,12 +585,15 @@ function events.tick()
                     song.compressedData = compressedData
                     song.totalChunks = math.ceil(string.len(compressedData) / midiPlayer.pingSize)
                     project:remove()
+                    song.state = "QUEUED"
+                    break
                 end
             end
         end
     end
 end
-
+--#ENDREGION
+--#REGION action wheel controls
 function events.MOUSE_PRESS(key,state,bitmast)
     local actionWheelOpen = action_wheel:isEnabled()
     local currentPage = action_wheel:getCurrentPage():getTitle()
@@ -512,10 +603,11 @@ function events.MOUSE_PRESS(key,state,bitmast)
             local selectedSongLocal = midiPlayer.songs[midiPlayer.songIndex[midiPlayer.selectedSong]]
             local selectedSongPinged = midiPlayer.instance.songs[midiPlayer.songIndex[midiPlayer.selectedSong]]
             if key == 0 then
-                if not selectedSongLocal.isPinged then
+                if selectedSongLocal.state == "LOCAL" then
                     selectedSongLocal.pingSize = midiPlayer.pingSize
-                    compressProjects[selectedSongLocal.ID] = midiPlayer.compressProject:new(selectedSongLocal.ID,selectedSongLocal.rawData)
-                else
+                    midiPlayer.compressProjects[selectedSongLocal.ID] = midiPlayer.compressProject:new(selectedSongLocal.ID,selectedSongLocal.rawData)
+                    selectedSongLocal.state = "COMPRESSING"
+                elseif selectedSongLocal.state == "GLOBAL" then
                     if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
                         pings.updateSong(selectedSongPinged.ID,1)
                     elseif selectedSongPinged.state == "PLAYING" then
@@ -523,14 +615,15 @@ function events.MOUSE_PRESS(key,state,bitmast)
                     end
                 end
             elseif key == 1 then
-                if midiPlayer.instance.activeSong and selectedSongLocal.isPinged then
+                if midiPlayer.instance.activeSong and midiPlayer.songs[midiPlayer.instance.activeSong].state == "GLOBAL" then
                     pings.updateSong(midiPlayer.instance.songs[midiPlayer.instance.activeSong].ID,0)
                 end
             end
         end
     end
 end
-
+--#ENDREGION
+--#REGION ping midi
 function events.on_play_sound(sound)
     if sound == "minecraft:ui.toast.in" then
         if midiPlayer.pingQueue[1] then
@@ -545,6 +638,9 @@ function events.tick()
     if not (clock % 20 == 0) then return end
     local queuedSong = midiPlayer.pingQueue[1]
     if queuedSong then
+        if midiPlayer.songs[queuedSong].state == "QUEUED" then
+            midiPlayer.songs[queuedSong].state = "UPLOADING" 
+        end
         local currentChunk = midiPlayer.songs[queuedSong].currentChunk
         local pingSize = midiPlayer.songs[queuedSong].pingSize - midiPlayer.songs[queuedSong].nameLength - 9
         local totalChunks = midiPlayer.songs[queuedSong].totalChunks
@@ -552,12 +648,8 @@ function events.tick()
         local dataChunk = string.sub(compressedData,currentChunk * pingSize,((currentChunk + 1) * pingSize) - 1)
         local isLastChunk = currentChunk == totalChunks
         if isLastChunk then
-            midiPlayer.songs[queuedSong].isPinged = true
-            local newQueue = {}
-            for k = 2,#midiPlayer.pingQueue do
-                table.insert(newQueue,midiPlayer.pingQueue[k])
-            end
-            midiPlayer.pingQueue = newQueue
+            midiPlayer.songs[queuedSong].state = "DECOMPRESSING"
+            table.remove(midiPlayer.pingQueue,1)
         else
             midiPlayer.songs[queuedSong].currentChunk = currentChunk + 1
         end
@@ -566,3 +658,4 @@ function events.tick()
 end
 
 return midiPlayer
+--#ENDREGION

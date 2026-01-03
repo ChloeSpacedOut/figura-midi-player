@@ -8,6 +8,7 @@
 - clear channels at the start of a new song
 - check if all channels have ended before song end
 - set ping limit being bellow size of name bytes + ping name bytes must be considered
+- check why desyncTest and thom errors
  ]]
 local instance
 
