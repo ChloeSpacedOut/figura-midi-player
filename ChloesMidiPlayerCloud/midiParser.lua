@@ -241,6 +241,7 @@ function midiParser.project:new(midiSong,shouldQueueSong)
     self.chunkSize = 500
     self.hasReadHeader = false
     self.currentTrack = nil
+    self.lastStatusByte = nil
     return self
 end
 
@@ -267,7 +268,7 @@ function midiParser.updateParser(midi)
                 project.song.numTracks = buffer:readShort()
                 local bits = readBits(buffer,2)
                 if bits[16] == 0 then
-                    project.song.ticksPerQuaterNote = bitsToNum(bits,0,14)
+                    project.song.ticksPerQuarterNote = bitsToNum(bits,0,14)
                 elseif bits[16] == 1 then -- untested
                     project.song.framesPerSecond = math.abs(bitsToNum(bits,8,14) - 128)
                     project.song.ticksPerFrame = bitsToNum(bits,0,7)
@@ -315,8 +316,14 @@ function midiParser.updateParser(midi)
                 local statusByte = bitsToNum(nextBits,4,7)
                 if midiParser.voiceMessages[statusByte] then
                     midiParser.voiceMessages[statusByte](buffer,project.currentTrack,deltaTime,nextBits)
+                    project.lastStatusByte = statusByte
                 else
-                    log("Failed reading byte " .. string.format("%X",buffer:getPosition() - 1).." with value " .. string.format("%X",nextByte))
+                    if bit32.extract(statusByte,7) == 0 and project.lastStatusByte then
+                        buffer:setPosition(buffer:getPosition() - 1)
+                        midiParser.voiceMessages[project.lastStatusByte](buffer,project.currentTrack,deltaTime,nextBits)
+                    else
+                        log("Failed reading byte " .. string.format("%X",buffer:getPosition() - 1).." with value " .. string.format("%X",nextByte))
+                    end
                 end
             end
         end

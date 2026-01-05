@@ -7,29 +7,50 @@ local midiPlayer = {
 
 local function progressMidi(instance,activeSong,sysTime,deltaTime)
     if activeSong.state == "PAUSED" or activeSong.state == "STOPPED" then return end
-    activeSong.clock = activeSong.clock + (deltaTime / (activeSong.tempo / (activeSong.ticksPerQuaterNote * 1000))) * activeSong.speed
+    activeSong.clock = activeSong.clock + (deltaTime / (activeSong.tempo / (activeSong.ticksPerQuarterNote * 1000))) * activeSong.speed
+    local isSongEnded = true
     for trackID, activeTrack in pairs(activeSong.tracks) do
-        if not instance.tracks[trackID] then
-            instance.tracks[trackID] = {}
-        end
-        for i = activeTrack.sequenceIndex, #activeTrack.sequence do
-            if not activeTrack.lastEventTime then
-                activeTrack.lastEventTime = activeSong.clock
+        if not activeTrack.isEnded then
+            isSongEnded = false
+            if not instance.tracks[trackID] then
+                instance.tracks[trackID] = {}
             end
-            local eventDeltaTime = activeSong.clock - activeTrack.lastEventTime
-            local targetDelta = activeTrack.sequence[i].deltaTime
-            if eventDeltaTime >= targetDelta then
-                local typeFunction = midi.events[activeTrack.sequence[i].type]
-                if typeFunction then
-                    typeFunction(instance,activeTrack.sequence[i],sysTime,activeTrack,trackID,activeSong)
+            for i = activeTrack.sequenceIndex, #activeTrack.sequence do
+                if not activeTrack.lastEventTime then
+                    activeTrack.lastEventTime = activeSong.clock
                 end
-                activeTrack.lastEventTime = activeSong.clock - (eventDeltaTime - targetDelta)
-            else
-                activeTrack.sequenceIndex = i
-                break
+                local eventDeltaTime = activeSong.clock - activeTrack.lastEventTime
+                local targetDelta = activeTrack.sequence[i].deltaTime
+                if eventDeltaTime >= targetDelta then
+                    local typeFunction = midi.events[activeTrack.sequence[i].type]
+                    if instance.onMidiEvent then
+                        instance:onMidiEvent(activeTrack.sequence[i], activeTrack, trackID, activeSong)
+                    end
+                    if typeFunction then
+                        typeFunction(instance, activeTrack.sequence[i], sysTime, activeTrack, trackID, activeSong)
+                    end
+                    activeTrack.lastEventTime = activeSong.clock - (eventDeltaTime - targetDelta)
+                else
+                    activeTrack.sequenceIndex = i
+                    break
+                end
             end
-         end
+        end
     end
+--[[     if isSongEnded then
+        if activeSong.loopState then
+            if activeSong.post then
+                activeSong:post(true)
+            end
+            activeSong:stop()
+            activeSong:play()
+        else
+            if activeSong.post then
+                activeSong:post(false)
+            end
+            activeSong:stop()
+        end
+    end ]]
 end
 
 local function updateNotes(instance,sysTime)
@@ -40,10 +61,10 @@ local function updateNotes(instance,sysTime)
                 return
             end
             if note.sound then
-                note.sound:setPos(targetPos)
+                note.sound:pos(targetPos)
             end
             if note.loopSound then
-                note.loopSound:setPos(targetPos)
+                note.loopSound:pos(targetPos)
             end
             local instrument = soundfont.instruments[note.instrument.index]
             local noteVol = 1
@@ -60,17 +81,17 @@ local function updateNotes(instance,sysTime)
                 if note.state == "RELEASED" then
                     if instrument.resonance ~= 0 then
                         if note.loopSound then
-                            note.loopSound:setVolume(noteVol * resonanceMod * note.velocity)
+                            note.loopSound:volume(noteVol * resonanceMod * note.velocity)
                         elseif note.sound then
-                            note.sound:setVolume(noteVol * resonanceMod * note.velocity)
+                            note.sound:volume(noteVol * resonanceMod * note.velocity)
                         end
                     else
                         note:stop()
                     end
                 elseif note.state == "SUSTAINING" then
-                    note.loopSound:setVolume(noteVol * note.velocity)
+                    note.loopSound:volume(noteVol * note.velocity)
                 elseif note.state == "PLAYING" then
-                    note.sound:setVolume(noteVol * note.velocity) -- idk if this accounts for loop only samples
+                    note.sound:volume(noteVol * note.velocity) -- idk if this accounts for loop only samples
                 end
             end
             if instrument.resonance ~= 0 and note.state == "RELEASED" then

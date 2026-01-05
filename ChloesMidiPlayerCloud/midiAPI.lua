@@ -74,6 +74,9 @@ function midi.song:stop()
             note:stop()
         end
     end
+    for _,channel in pairs(self.instance.channels) do
+        channel:remove()
+    end
     return self
 end
 
@@ -142,14 +145,21 @@ function midi.track:new()
     self = setmetatable({},midi.track)
     self.sequenceIndex = 1
     self.lastEventTime = 0
+    self.isEnded = false
     self.sequence = {}
     return self
 end
 
-function midi.channel:new()
+function midi.channel:new(instance,ID)
     self = setmetatable({},midi.channel)
+    self.ID = ID
+    self.instance = instance
     self.instrument = 0
     return self
+end
+
+function midi.channel:remove()
+    self.instance.channels[self.ID] = nil
 end
 
 function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
@@ -163,7 +173,8 @@ function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
     self.initTime = sysTime
     local channelObject = instance.channels[currentChannel]
     if not channelObject then
-        channelObject = midi.channel:new()
+        channelObject = midi.channel:new(instance,currentChannel)
+        instance.channels[currentChannel] = channelObject
     end
     if currentChannel ~= 9 then
         self.instrument = soundfont.soundTree[channelObject.instrument + 1]
@@ -208,7 +219,11 @@ function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
     end
 
     self.duration = soundfont.soundDuration[soundID]
-    self.sound = sounds:playSound(soundID,instance.target:getPos(),self.velocity,soundPitch,not hasMain)
+
+    self.sound = sounds[soundID]
+    self.sound:pos(instance.target:getPos()):volume(self.velocity):pitch(soundPitch):loop(not hasMain):subtitle("MIDI song plays"):play()
+    
+    --sounds:playSound(soundID,instance.target:getPos(),self.velocity,soundPitch,not hasMain):setSubtitle("MIDI song plays")
     return self
 end
 
@@ -227,7 +242,10 @@ function midi.note:sustain()
     local soundPitch = self.instrument.Sustain[tostring(self.pitch)].pitch
     if self.instrument.Main then
         self.sound:stop()
-        self.loopSound = sounds:playSound(soundID,self.instance.target:getPos(),self.velocity,soundPitch,true)
+        self.loopSound = sounds[soundID]
+        self.loopSound:pos(self.instance.target:getPos()):volume(self.velocity):pitch(soundPitch):loop(true):subtitle("MIDI song plays"):play()
+        
+        --sounds:playSound(soundID,self.instance.target:getPos(),self.velocity,soundPitch,true):setSubtitle("MIDI song plays")
     else
         self.loopSound = self.sound
     end
@@ -267,25 +285,14 @@ midi.events = {
         end
     end,
     endOfTrack = function(instance,eventData,sysTime,activeTrack,trackID,activeSong)
-        if activeSong.loopState then
-            if activeSong.post then
-                activeSong:post(true)
-            end
-            activeSong:stop()
-            activeSong:play()
-        else
-            if activeSong.post then
-                activeSong:post(false)
-            end
-            activeSong:stop()
-        end
+        activeTrack.isEnded = true
     end,
     setTempo = function(instance,eventData,sysTime,activeTrack,trackID,activeSong)
         activeSong.tempo = eventData.tempo
     end,
     programChange = function(instance,eventData,sysTime,activeTrack,trackID,activeSong)
         if not instance.channels[eventData.channel] then
-            instance.channels[eventData.channel] = midi.channel:new()
+            instance.channels[eventData.channel] = midi.channel:new(instance,eventData.channel)
         end
         instance.channels[eventData.channel].instrument = eventData.newProgramNumber
     end

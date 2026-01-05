@@ -17,7 +17,8 @@ local midiPlayer = {
     selectedSong = 1,
     pageSize = 20,
     pingSize = 450,
-    limitRoleback = 5
+    limitRoleback = 5,
+    localMode = false
 }
 --#ENDREGION
 --#REGION midi player cloud setup
@@ -205,11 +206,19 @@ local limitRoleback = config:load("limitRoleback")
 if limitRoleback then
     midiPlayer.limitRoleback = limitRoleback
 end
+local localMode = config:load("localMode")
+if localMode then
+    midiPlayer.localMode = localMode
+end
 function events.tick()
     if midiPlayer.instance then
         for k,v in pairs(midiPlayer.instance.songs) do
-            if v.loaded then
-                midiPlayer.songs[v.ID].state = "GLOBAL"
+            if v.loaded and (midiPlayer.songs[v.ID].state ~= "LOCAL_PROCESSED" and midiPlayer.songs[v.ID].state ~= "GLOBAL") then
+                if midiPlayer.instance.songs[v.ID].localMode then
+                    midiPlayer.songs[v.ID].state = "LOCAL_PROCESSED"
+                else
+                    midiPlayer.songs[v.ID].state = "GLOBAL"
+                end
             end
         end
     end
@@ -257,6 +266,9 @@ local uploadStateLookup = {
     end,
     GLOBAL = function(name)
         return ":checkmark:§a "
+    end,
+    LOCAL_PROCESSED = function(name)
+        return ":folder:§e "
     end
 }
 
@@ -277,6 +289,9 @@ local function generateSongSelector()
         local stateIndicator = uploadStateLookup[uploadState](name)
         if playStateLookup[playState] then
             stateIndicator = playStateLookup[playState]
+        end
+        if string.len(name) > 40 then
+            name = string.sub(name,0,40) .. "..."
         end
         local currentPage = math.floor((k - 1) / midiPlayer.pageSize)
         if currentPage == selectedPage then
@@ -327,12 +342,20 @@ actions.pingSize = midiPlayer.settings:newAction()
     end)
 
 actions.limitRoleback = midiPlayer.settings:newAction()
-    :setTitle("limit roleback \n" .. tostring(midiPlayer.limitRoleback) .. " pings")
+    :setTitle("ratelimit roleback \n" .. tostring(midiPlayer.limitRoleback) .. " pings")
     :setOnScroll(function(scroll) 
         midiPlayer.limitRoleback = math.max(0,midiPlayer.limitRoleback + (scroll))
         config:save("limitRoleback",midiPlayer.limitRoleback)
         actions.limitRoleback:setTitle("limit roleback \n" .. tostring(midiPlayer.limitRoleback) .. " pings")
     end)
+
+actions.localMode = midiPlayer.settings:newAction()
+    :setTitle("local mode")
+    :setOnToggle(function(bool) 
+        midiPlayer.localMode = bool
+        config:save("localMode",midiPlayer.localMode)
+    end)
+    :setToggled(midiPlayer.localMode)
 
 function midiPlayer:addMidiPlayer(page)
     midiPlayer.returnPage = page
@@ -532,10 +555,11 @@ function events.tick()
                 else
                     project.readBytes = currentBytes
                 end
-                if buffer:getPosition() == project.bufferLength and project.readBytes ~= "" then
-                    -- 'readBytes ~= ""' may not account for the last byte
-                    project.patternCount[currentBytes] = project.patternCount[currentBytes] + 1
-                    table.insert(project.patternOrder, project.existingPatterns[currentBytes])
+                if buffer:getPosition() == project.bufferLength then
+                    if project.readBytes ~= "" then
+                        project.patternCount[currentBytes] = project.patternCount[currentBytes] + 1
+                        table.insert(project.patternOrder, project.existingPatterns[currentBytes])
+                    end
                     project.hasReadPatterns = true
                     project.currentChunk = 0
                     project.patternIndexLength = #project.patternIndex
@@ -603,20 +627,47 @@ function events.MOUSE_PRESS(key,state,bitmast)
             local selectedSongLocal = midiPlayer.songs[midiPlayer.songIndex[midiPlayer.selectedSong]]
             local selectedSongPinged = midiPlayer.instance.songs[midiPlayer.songIndex[midiPlayer.selectedSong]]
             if key == 0 then
-                if selectedSongLocal.state == "LOCAL" then
-                    selectedSongLocal.pingSize = midiPlayer.pingSize
-                    midiPlayer.compressProjects[selectedSongLocal.ID] = midiPlayer.compressProject:new(selectedSongLocal.ID,selectedSongLocal.rawData)
-                    selectedSongLocal.state = "COMPRESSING"
-                elseif selectedSongLocal.state == "GLOBAL" then
-                    if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
-                        pings.updateSong(selectedSongPinged.ID,1)
-                    elseif selectedSongPinged.state == "PLAYING" then
-                        pings.updateSong(selectedSongPinged.ID,2)
+                if midiPlayer.localMode then
+                    if selectedSongLocal.state == "LOCAL" then
+                        midiPlayer.instance:newSong(selectedSongLocal.ID,selectedSongLocal.rawData)
+                        midiPlayer.instance.songs[selectedSongLocal.ID].localMode = true
+                        midiPlayer.instance.songs[selectedSongLocal.ID]:load()
+                        selectedSongLocal.state = "PARSING"
+                    elseif selectedSongLocal.state == "LOCAL_PROCESSED" or selectedSongLocal.state == "GLOBAL" then
+                        if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
+                            midiPlayer.instance.songs[selectedSongLocal.ID]:play()
+                        elseif selectedSongPinged.state == "PLAYING" then
+                            midiPlayer.instance.songs[selectedSongLocal.ID]:pause()
+                        end
+                    end
+                else
+                    if selectedSongLocal.state == "LOCAL" or selectedSongLocal.state == "LOCAL_PROCESSED" then
+                        if selectedSongPinged then
+                            selectedSongPinged:remove()
+                        end
+                        selectedSongLocal.pingSize = midiPlayer.pingSize
+                        midiPlayer.compressProjects[selectedSongLocal.ID] = midiPlayer.compressProject:new(selectedSongLocal.ID,selectedSongLocal.rawData)
+                        selectedSongLocal.state = "COMPRESSING"
+                    elseif selectedSongLocal.state == "GLOBAL" then
+                        if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
+                            pings.updateSong(selectedSongPinged.ID,1)
+                        elseif selectedSongPinged.state == "PLAYING" then
+                            pings.updateSong(selectedSongPinged.ID,2)
+                        end
                     end
                 end
             elseif key == 1 then
-                if midiPlayer.instance.activeSong and midiPlayer.songs[midiPlayer.instance.activeSong].state == "GLOBAL" then
-                    pings.updateSong(midiPlayer.instance.songs[midiPlayer.instance.activeSong].ID,0)
+                if midiPlayer.instance.activeSong then
+                    local state = midiPlayer.songs[midiPlayer.instance.activeSong].state
+                    if midiPlayer.localMode then
+                        if state == "GLOBAL" or state == "LOCAL_PROCESSED" then
+                            midiPlayer.instance.songs[midiPlayer.instance.activeSong]:stop()
+                        end
+                    else
+                        if state == "GLOBAL" or state == "LOCAL_PROCESSED" then
+                            pings.updateSong(midiPlayer.instance.songs[midiPlayer.instance.activeSong].ID,0)
+                        end
+                    end
                 end
             end
         end
