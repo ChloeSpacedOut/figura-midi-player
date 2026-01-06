@@ -256,11 +256,13 @@ local uploadStateLookup = {
     end,
     DECOMPRESSING = function(name)
         local project = midiPlayer.decompressProjects[name]
+        if not project then return ":loading: :folder_paper:§e " end
         local progress = math.floor(((project.currentChunk * project.chunkSize) / project.bufferLength) * 100)
         return ":loading: :folder_paper:§e [" .. progress .. "%] "
     end,
     PARSING = function(name)
         local project = midiPlayer.instance.midiParser.projects[name]
+        if not project then return ":loading: :cd:§e " end
         local progress = math.floor(((project.currentChunk * project.chunkSize) / project.buffer:getLength()) * 100)
         return ":loading: :cd:§e [" .. progress .. "%] "
     end,

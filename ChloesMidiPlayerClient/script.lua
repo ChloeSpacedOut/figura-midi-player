@@ -18,6 +18,7 @@
 - check if notes playing on top of themselves should cancle out the previous note. If not, give notes a random ID, and have an index of all the notes to random IDs
 - move midi parser to insance, kill all parse projects if instance stops existing (this is the buffer leak issue)
 - lower pitch notes should sustain for longer than they currently do (listen to hall of the mountain king)
+- function to just get all the sounds in the midi player cloud
  ]]
 local instance
 

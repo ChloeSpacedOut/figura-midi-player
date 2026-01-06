@@ -161,63 +161,63 @@ midiParser.metaEvents = {
 }
 
 midiParser.voiceMessages = {
-    [0x8] = function(buffer,currentTrack,deltaTime,initialBits)
+    [0x8] = function(buffer,currentTrack,deltaTime,channel)
         table.insert(currentTrack.sequence,{
             type = "noteOff",
             deltaTime = deltaTime,
-            channel = bitsToNum(initialBits,0,3),
+            channel = channel,
             key = bitsToNum(readBits(buffer,1),0,6),
             velocity = bitsToNum(readBits(buffer,1),0,6)
         })
     end,
-    [0x9] = function(buffer,currentTrack,deltaTime,initialBits)
+    [0x9] = function(buffer,currentTrack,deltaTime,channel)
         table.insert(currentTrack.sequence,{
             type = "noteOn",
             deltaTime = deltaTime,
-            channel = bitsToNum(initialBits,0,3),
+            channel = channel,
             key = bitsToNum(readBits(buffer,1),0,6),
             velocity = bitsToNum(readBits(buffer,1),0,6)
         })
     end,
-    [0xA] = function(buffer,currentTrack,deltaTime,initialBits)
+    [0xA] = function(buffer,currentTrack,deltaTime,channel)
         table.insert(currentTrack.sequence,{
             type = "polyphonicKeyPressure",
             deltaTime = deltaTime,
-            channel = bitsToNum(initialBits,0,3),
+            channel = channel,
             key = bitsToNum(readBits(buffer,1),0,6),
             pressure = bitsToNum(readBits(buffer,1),0,6)
         })
     end,
-    [0xB] = function(buffer,currentTrack,deltaTime,initialBits)
+    [0xB] = function(buffer,currentTrack,deltaTime,channel)
         table.insert(currentTrack.sequence,{
             type = "controllerChange",
             deltaTime = deltaTime,
-            channel = bitsToNum(initialBits,0,3),
+            channel = channel,
             controllerNumber = bitsToNum(readBits(buffer,1),0,6),
             controllerValue = bitsToNum(readBits(buffer,1),0,6)
         })
     end,
-    [0xC] = function(buffer,currentTrack,deltaTime,initialBits)
+    [0xC] = function(buffer,currentTrack,deltaTime,channel)
         table.insert(currentTrack.sequence,{
             type = "programChange",
             deltaTime = deltaTime,
-            channel = bitsToNum(initialBits,0,3),
+            channel = channel,
             newProgramNumber = bitsToNum(readBits(buffer,1),0,6)
         })
     end,
-    [0xD] = function(buffer,currentTrack,deltaTime,initialBits)
+    [0xD] = function(buffer,currentTrack,deltaTime,channel)
         table.insert(currentTrack.sequence,{
             type = "channelKeyPressure",
             deltaTime = deltaTime,
-            channel = bitsToNum(initialBits,0,3),
+            channel = channel,
             channelPressureValue = bitsToNum(readBits(buffer,1),0,6)
         })
     end,
-    [0xE] = function(buffer,currentTrack,deltaTime,initialBits)
+    [0xE] = function(buffer,currentTrack,deltaTime,channel)
         table.insert(currentTrack.sequence,{
             type = "pitchBend",
             deltaTime = deltaTime,
-            channel = bitsToNum(initialBits,0,3),
+            channel = channel,
             leastSignificantByte = bitsToNum(readBits(buffer,1),0,6),
             mostSignificantByte = bitsToNum(readBits(buffer,1),0,6)
         })
@@ -242,12 +242,26 @@ function midiParser.project:new(midiSong,shouldQueueSong)
     self.hasReadHeader = false
     self.currentTrack = nil
     self.lastStatusByte = nil
+    self.lastChannel = nil
+    self.warns = {}
     return self
 end
 
 function midiParser.project:remove()
     self.buffer:close()
     midiParser.projects[self.ID] = nil
+end
+
+local function exitParser(project)
+    project.song.loaded = true
+    project.song.isLoading = false
+    if project.shouldQueueSong then
+        project.song:play()
+    end
+    if #project.warns ~= 0 then
+        log("Warns created when parsing " .. project.ID,project.warns)
+    end
+    project:remove()
 end
 
 function midiParser.updateParser(midi)
@@ -274,7 +288,7 @@ function midiParser.updateParser(midi)
                     project.song.ticksPerFrame = bitsToNum(bits,0,7)
                 end
             else
-                log("Midi file header was invalid")
+                log("Midi file header was invalid, cancled parsing " .. project.ID)
                 project:remove()
                 return
             end
@@ -286,8 +300,13 @@ function midiParser.updateParser(midi)
                 project.currentTrack = midi.track:new()
                 project.currentTrack.length = buffer:readInt()
                 project.currentTrack.eventStartPos = buffer:getPosition()
+            elseif buffer:getPosition() == bufferLength then
+                exitParser(project)
+                return
             else
-                -- midi track invalid
+                log("Midi track header was invalid, cancled parsing " .. project.ID)
+                project:remove()
+                return
             end
         end
         -- read track
@@ -314,15 +333,18 @@ function midiParser.updateParser(midi)
                 buffer:setPosition(buffer:getPosition() - 1)
                 local nextBits = readBits(buffer,1)
                 local statusByte = bitsToNum(nextBits,4,7)
+                local channel = bitsToNum(nextBits,0,3)
                 if midiParser.voiceMessages[statusByte] then
-                    midiParser.voiceMessages[statusByte](buffer,project.currentTrack,deltaTime,nextBits)
+                    midiParser.voiceMessages[statusByte](buffer,project.currentTrack,deltaTime,channel)
                     project.lastStatusByte = statusByte
+                    project.lastChannel = channel
                 else
                     if bit32.extract(statusByte,7) == 0 and project.lastStatusByte then
                         buffer:setPosition(buffer:getPosition() - 1)
-                        midiParser.voiceMessages[project.lastStatusByte](buffer,project.currentTrack,deltaTime,nextBits)
+                        midiParser.voiceMessages[project.lastStatusByte](buffer,project.currentTrack,deltaTime,project.lastChannel)
                     else
-                        log("Failed reading byte " .. string.format("%X",buffer:getPosition() - 1).." with value " .. string.format("%X",nextByte))
+                        local warn = "Failed reading byte " .. string.format("%X",buffer:getPosition() - 1).." with value " .. string.format("%X",nextByte)
+                        table.insert(project.warns,warn)
                     end
                 end
             end
@@ -338,12 +360,7 @@ function midiParser.updateParser(midi)
         project.lastBufferPos = buffer:getPosition()
 
         if bufferEndPos == bufferLength then
-            project.song.loaded = true
-            project.song.isLoading = false
-            if project.shouldQueueSong then
-                project.song:play()
-            end
-            project:remove()
+            exitParser(project)
         end
     end
 end

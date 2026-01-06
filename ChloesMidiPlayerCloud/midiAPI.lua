@@ -69,6 +69,7 @@ function midi.song:stop()
     end
     self.instance.activeSong = nil
     self.state = "STOPPED"
+    self.tempo = 500000
     for _,track in pairs(self.instance.tracks) do
         for _,note in pairs(track) do
             note:stop()
@@ -263,11 +264,16 @@ function midi.note:stop()
     if self.loopSound then
         self.loopSound:stop()
     end
-    self.instance.tracks[self.track][tostring(self.pitch)] = nil
+    self.instance.tracks[self.track][self.pitch] = nil
 end
 
 midi.events = {
     noteOn = function(instance,eventData,sysTime,activeTrack,trackID,activeSong)
+        if eventData.velocity == 0 then
+            eventData.type = "noteOff"
+            midi.events.noteOff(instance,eventData,sysTime,activeTrack,trackID,activeSong)
+            return
+        end
         if instance.tracks[trackID][eventData.key] then
             instance.tracks[trackID][eventData.key]:stop()
         end
