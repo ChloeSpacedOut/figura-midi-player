@@ -239,7 +239,11 @@ function midiParser.project:new(midiSong,shouldQueueSong)
     self.lastBufferPos = 0
     self.currentChunk = 0
     self.chunkSize = 500
+    self.numEvents = 0
+    self.eventProgress = 0
     self.hasReadHeader = false
+    self.hasParsedMidi = false
+    self.hasBakedTimes = false
     self.currentTrack = nil
     self.lastStatusByte = nil
     self.lastChannel = nil
@@ -273,7 +277,6 @@ function midiParser.updateParser(midi)
             project:remove()
             break
         end
-        -- read midi header
         if not project.hasReadHeader then
             if buffer:readString(4) == "MThd" then
                 project.hasReadHeader = true
@@ -292,75 +295,140 @@ function midiParser.updateParser(midi)
                 project:remove()
                 return
             end
-        
-        end
-        -- read track header
-        if not project.currentTrack then
-            if buffer:readString(4) == "MTrk" then
-                project.currentTrack = midi.track:new()
-                project.currentTrack.length = buffer:readInt()
-                project.currentTrack.eventStartPos = buffer:getPosition()
-            elseif buffer:getPosition() == bufferLength then
-                exitParser(project)
-                return
-            else
-                log("Midi track header was invalid, cancled parsing " .. project.ID)
-                project:remove()
-                return
-            end
-        end
-        -- read track
-        while ((buffer:getPosition() - project.currentTrack.eventStartPos) < project.currentTrack.length) and (buffer:getPosition() < (project.currentChunk * project.chunkSize) and (buffer:getPosition() ~= bufferLength)) do
-            project.song.loadAmount = buffer:getPosition()/bufferLength
-            local startPos = buffer:getPosition()
-            repeat
-                local val = buffer:read()
-                local signBit = bit32.extract(val,7)
-            until signBit == 0 or buffer:getPosition() == bufferLength
-            local endPos = buffer:getPosition()
-            buffer:setPosition(startPos)
-            local deltaBits = readBits(buffer,endPos - startPos)
-            local deltaTime = variableLengthBitsToNum(deltaBits)
-            buffer:setPosition(endPos)
-            local nextByte = buffer:read()
-            if nextByte == 255 then
-                local type = buffer:read()
-                local eventLength = buffer:read()
-                if midiParser.metaEvents[type] then
-                    midiParser.metaEvents[type](buffer,project.currentTrack,deltaTime,eventLength)
-                end
-            else
-                buffer:setPosition(buffer:getPosition() - 1)
-                local nextBits = readBits(buffer,1)
-                local statusByte = bitsToNum(nextBits,4,7)
-                local channel = bitsToNum(nextBits,0,3)
-                if midiParser.voiceMessages[statusByte] then
-                    midiParser.voiceMessages[statusByte](buffer,project.currentTrack,deltaTime,channel)
-                    project.lastStatusByte = statusByte
-                    project.lastChannel = channel
+        elseif not project.hasParsedMidi then
+            project.song.loadProgress = (project.currentChunk * project.chunkSize) / project.buffer:getLength() / 2
+            if not project.currentTrack then
+                if buffer:readString(4) == "MTrk" then
+                    project.currentTrack = midi.track:new()
+                    project.currentTrack.length = buffer:readInt()
+                    project.currentTrack.eventStartPos = buffer:getPosition()
+                elseif buffer:getPosition() == bufferLength then
+                    exitParser(project)
+                    return
                 else
-                    if bit32.extract(statusByte,7) == 0 and project.lastStatusByte then
-                        buffer:setPosition(buffer:getPosition() - 1)
-                        midiParser.voiceMessages[project.lastStatusByte](buffer,project.currentTrack,deltaTime,project.lastChannel)
+                    log("Midi track header was invalid, cancled parsing " .. project.ID)
+                    project:remove()
+                    return
+                end
+            end
+            repeat
+                local startPos = buffer:getPosition()
+                repeat
+                    local val = buffer:read()
+                    local signBit = bit32.extract(val, 7)
+                until signBit == 0 or buffer:getPosition() == bufferLength
+                local endPos = buffer:getPosition()
+                buffer:setPosition(startPos)
+                local deltaBits = readBits(buffer, endPos - startPos)
+                local deltaTime = variableLengthBitsToNum(deltaBits)
+                buffer:setPosition(endPos)
+                local nextByte = buffer:read()
+                if nextByte == 255 then
+                    local type = buffer:read()
+                    local eventLength = buffer:read()
+                    if midiParser.metaEvents[type] then
+                        midiParser.metaEvents[type](buffer, project.currentTrack, deltaTime, eventLength)
+                    end
+                else
+                    buffer:setPosition(buffer:getPosition() - 1)
+                    local nextBits = readBits(buffer, 1)
+                    local statusByte = bitsToNum(nextBits, 4, 7)
+                    local channel = bitsToNum(nextBits, 0, 3)
+                    if midiParser.voiceMessages[statusByte] then
+                        midiParser.voiceMessages[statusByte](buffer, project.currentTrack, deltaTime, channel)
+                        project.lastStatusByte = statusByte
+                        project.lastChannel = channel
                     else
-                        local warn = "Failed reading byte " .. string.format("%X",buffer:getPosition() - 1).." with value " .. string.format("%X",nextByte)
-                        table.insert(project.warns,warn)
+                        if bit32.extract(statusByte, 7) == 0 and project.lastStatusByte then
+                            buffer:setPosition(buffer:getPosition() - 1)
+                            midiParser.voiceMessages[project.lastStatusByte](buffer, project.currentTrack, deltaTime,
+                                project.lastChannel)
+                        else
+                            local warn = "Failed reading byte " ..
+                            string.format("%X", buffer:getPosition() - 1) ..
+                            " with value " .. string.format("%X", nextByte)
+                            table.insert(project.warns, warn)
+                        end
                     end
                 end
+            until ((buffer:getPosition() - project.currentTrack.eventStartPos) >= project.currentTrack.length) or (buffer:getPosition() >= (project.currentChunk * project.chunkSize) or (buffer:getPosition() == bufferLength))
+            if not ((buffer:getPosition() - project.currentTrack.eventStartPos) < project.currentTrack.length) then
+                table.insert(project.song.tracks, project.currentTrack)
+                project.currentTrack = nil
             end
-        end
-        if not ((buffer:getPosition() - project.currentTrack.eventStartPos) < project.currentTrack.length) then
-            table.insert(project.song.tracks, project.currentTrack)
-            project.currentTrack = nil
-        end
-        local bufferEndPos = buffer:getPosition()
-        if bufferEndPos == project.lastBufferPos then
-            buffer:setPosition(bufferEndPos + 1)
-        end
-        project.lastBufferPos = buffer:getPosition()
-
-        if bufferEndPos == bufferLength then
-            exitParser(project)
+            local bufferEndPos = buffer:getPosition()
+            if bufferEndPos == project.lastBufferPos then
+                buffer:setPosition(bufferEndPos + 1)
+            end
+            project.lastBufferPos = buffer:getPosition()
+            if bufferEndPos == bufferLength then
+                project.hasParsedMidi = true
+                project.currentChunk = 0
+                for _,track in pairs(project.song.tracks) do
+                    project.numEvents = project.numEvents + #track.sequence
+                end
+            end
+        elseif not project.hasBakedTimes then
+            local chunkSize = project.chunkSize / 50
+            project.song.loadProgress = 0.5 + (project.eventProgress / project.numEvents) / 2
+            for i = (project.currentChunk - 1) * chunkSize + 1,project.currentChunk * chunkSize do
+                local clock = i * project.song.ticksPerQuarterNote
+                local isSongEnded = true
+                for trackID, activeTrack in pairs(project.song.tracks) do
+                    if not activeTrack.isEnded then
+                        isSongEnded = false
+                        for j = activeTrack.sequenceIndex, #activeTrack.sequence do
+                            if not activeTrack.lastEventTime then
+                                activeTrack.lastEventTime = clock
+                            end
+                            local eventDeltaTime = clock - activeTrack.lastEventTime
+                            local targetDelta = activeTrack.sequence[j].deltaTime
+                            if eventDeltaTime >= targetDelta then
+                                project.eventProgress = project.eventProgress + 1
+                                local timePassed = targetDelta * (project.song.tempo / (project.song.ticksPerQuarterNote * 1000))
+                                activeTrack.trackLength = activeTrack.trackLength + timePassed
+                                if activeTrack.sequence[j].type == "setTempo" then
+                                    project.song.tempo = activeTrack.sequence[j].tempo
+                                elseif activeTrack.sequence[j].type == "endOfTrack" then
+                                    activeTrack.isEnded = true
+                                end
+                                activeTrack.lastEventTime = clock - (eventDeltaTime - targetDelta)
+                            else
+                                if not project.song.bakedQuarterNotes[i] then
+                                    project.song.bakedQuarterNotes[i] = {}
+                                end
+                                project.song.bakedQuarterNotes[i].tempo = project.song.tempo
+                                project.song.bakedQuarterNotes[i].clock = clock
+                                project.song.bakedQuarterNotes[i][trackID] = {
+                                    sequenceIndex = j,
+                                    lastEventTime = activeTrack.lastEventTime,
+                                    time = activeTrack.trackLength
+                                }
+                                activeTrack.sequenceIndex = j
+                                break
+                            end
+                        end
+                    end
+                end
+                if isSongEnded then
+                    local maxLength = 0
+                    for _,track in pairs(project.song.tracks) do
+                        if track.trackLength > maxLength then
+                            maxLength = track.trackLength
+                        end
+                        track.lastEventTime = 0
+                        track.sequenceIndex = 1
+                        track.isEnded = false
+                    end
+                    project.song.length = maxLength
+                    project.song.lengthQuarterNotes = #project.song.bakedQuarterNotes
+                    project.hasBakedTimes = true
+                    project.song.tempo = 500000
+                    project.song.clock = 0
+                    exitParser(project)
+                    break
+                end
+            end
         end
     end
 end

@@ -20,21 +20,27 @@ function midi.song:new(instnace,ID,rawData)
     self.ID = ID
     self.instance = instnace
     self.tracks = {}
+    self.bakedQuarterNotes = {}
     self.state = "STOPPED"
     self.loopState = false
     self.loaded = false
     self.isLoading = false
-    self.loadAmount = 0
+    self.loadProgress = 0
     self.post = nil
     self.speed = 1
     self.tempo = 500000
     self.activeTrack = 1 -- only used for format 2
     self.clock = 0
+    self.lastSysTime = nil
+    self.time = 0
+    self.length = 0
+    self.lengthQuarterNotes = 0
     self.rawSong = rawData
     return self
 end
 
 function midi.song:play()
+    self.lastSysTime = client.getSystemTime()
     if self.instance.activeSong and (self.instance.activeSong ~= self.ID) then
         self.instance.songs[self.instance.activeSong]:stop()
     end
@@ -70,6 +76,13 @@ function midi.song:stop()
     self.instance.activeSong = nil
     self.state = "STOPPED"
     self.tempo = 500000
+    self.clock = 0
+    self.time = 0
+    for _,track in pairs(self.tracks) do
+        track.lastEventTime = 0
+        track.sequenceIndex = 1
+        track.isEnded = false
+    end
     for _,track in pairs(self.instance.tracks) do
         for _,note in pairs(track) do
             note:stop()
@@ -113,6 +126,25 @@ function midi.song:getSpeed()
     return self.speed
 end
 
+function midi.song:setTime(quaterNote)
+    quaterNote = math.floor(quaterNote % self.lengthQuarterNotes)
+    local timeData = self.bakedQuarterNotes[quaterNote]
+    self.tempo = timeData.tempo
+    self.clock = timeData.clock
+    local maxTime = 0
+    for trackID,track in pairs(self.tracks) do
+        if timeData[trackID] then
+            track.sequenceIndex = timeData[trackID].sequenceIndex
+            track.lastEventTime = timeData[trackID].lastEventTime
+            if timeData[trackID].time > maxTime then
+                maxTime = timeData[trackID].time
+            end
+        end
+    end
+    self.time = maxTime
+    return self
+end
+
 function midi.song:pause()
     if not self.loaded then
         return self
@@ -147,6 +179,7 @@ function midi.track:new()
     self.sequenceIndex = 1
     self.lastEventTime = 0
     self.isEnded = false
+    self.trackLength = 0
     self.sequence = {}
     return self
 end

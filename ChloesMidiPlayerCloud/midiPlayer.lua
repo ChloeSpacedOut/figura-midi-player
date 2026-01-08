@@ -8,6 +8,8 @@ local midiPlayer = {
 local function progressMidi(instance,activeSong,sysTime,deltaTime)
     if activeSong.state == "PAUSED" or activeSong.state == "STOPPED" then return end
     activeSong.clock = activeSong.clock + (deltaTime / (activeSong.tempo / (activeSong.ticksPerQuarterNote * 1000))) * activeSong.speed
+    activeSong.time = activeSong.time + (sysTime - activeSong.lastSysTime) * activeSong.speed
+    activeSong.lastSysTime = sysTime
     local isSongEnded = true
     for trackID, activeTrack in pairs(activeSong.tracks) do
         if not activeTrack.isEnded then
@@ -37,7 +39,7 @@ local function progressMidi(instance,activeSong,sysTime,deltaTime)
             end
         end
     end
---[[     if isSongEnded then
+    if isSongEnded then
         if activeSong.loopState then
             if activeSong.post then
                 activeSong:post(true)
@@ -50,7 +52,7 @@ local function progressMidi(instance,activeSong,sysTime,deltaTime)
             end
             activeSong:stop()
         end
-    end ]]
+    end
 end
 
 local function updateNotes(instance,sysTime)

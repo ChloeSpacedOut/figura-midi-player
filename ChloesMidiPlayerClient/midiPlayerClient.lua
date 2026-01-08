@@ -178,6 +178,7 @@ function pings.sendSong(ID,currentChunk,isLastChunk,data)
         for _,chunk in ipairs(midiPlayer.instance.songs[ID].songChunks) do
             compressedSong = compressedSong .. chunk
         end
+        midiPlayer.instance.songs[ID].songChunks = nil
         midiPlayer.decompressProjects[ID] = midiPlayer.decompressProject:new(ID,compressedSong)
     end
 end
@@ -261,9 +262,8 @@ local uploadStateLookup = {
         return ":loading: :folder_paper:§e [" .. progress .. "%] "
     end,
     PARSING = function(name)
-        local project = midiPlayer.instance.midiParser.projects[name]
-        if not project then return ":loading: :cd:§e " end
-        local progress = math.floor(((project.currentChunk * project.chunkSize) / project.buffer:getLength()) * 100)
+        if not midiPlayer.instance.songs[name] then return ":loading: :cd:§e " end
+        local progress = math.floor(midiPlayer.instance.songs[name].loadProgress * 100)
         return ":loading: :cd:§e [" .. progress .. "%] "
     end,
     GLOBAL = function(name)
@@ -274,9 +274,29 @@ local uploadStateLookup = {
     end
 }
 
+local function padNumber(num, length)
+    local string = tostring(num)
+    while #string < length do
+        string = "0" .. string
+    end
+    return string
+end
+
+local function msToTimeString(val)
+    local seconds = padNumber(math.floor(val/1000) % 60,2)
+    local minutes = padNumber(math.floor(val/(1000 * 60)) % 60,2)
+
+
+    return minutes .. ":" .. seconds
+end
+
 local playStateLookup = {
-    PLAYING = "§d:music2: ▶ ",
-    PAUSED = "§d:music2: ⏸ "
+    PLAYING = function(name)
+        return "§d:music2: ▶ [" .. msToTimeString(midiPlayer.instance.songs[name].time) .. "/" .. msToTimeString(midiPlayer.instance.songs[name].length) .. "] "
+    end,
+    PAUSED = function(name)
+        return "§d:music2: ⏸ [" .. msToTimeString(midiPlayer.instance.songs[name].time) .. "/" .. msToTimeString(midiPlayer.instance.songs[name].length) .. "] "
+    end
 }
 
 local function generateSongSelector()
@@ -290,7 +310,7 @@ local function generateSongSelector()
         end
         local stateIndicator = uploadStateLookup[uploadState](name)
         if playStateLookup[playState] then
-            stateIndicator = playStateLookup[playState]
+            stateIndicator = playStateLookup[playState](name)
         end
         if string.len(name) > 40 then
             name = string.sub(name,0,40) .. "..."
@@ -609,7 +629,8 @@ function events.tick()
                     local song = midiPlayer.songs[project.ID]
                     table.insert(midiPlayer.pingQueue,song.ID)
                     song.compressedData = compressedData
-                    song.totalChunks = math.ceil(string.len(compressedData) / midiPlayer.pingSize)
+                    local pingSize = song.pingSize - song.nameLength - 9
+                    song.totalChunks = math.floor(string.len(compressedData) / pingSize)
                     project:remove()
                     song.state = "QUEUED"
                     break
@@ -703,6 +724,7 @@ function events.tick()
         if isLastChunk then
             midiPlayer.songs[queuedSong].state = "DECOMPRESSING"
             table.remove(midiPlayer.pingQueue,1)
+            midiPlayer.songs[queuedSong].compressedData = nil
         else
             midiPlayer.songs[queuedSong].currentChunk = currentChunk + 1
         end

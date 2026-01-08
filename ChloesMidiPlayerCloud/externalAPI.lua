@@ -10,7 +10,6 @@ function instance:new(ID,target)
     self.ID = ID
     self.activeSong = nil
     self.target = target
-    self.midiParser = midiParser
     self.midi = midi
     self.lastSysTime = client.getSystemTime()
     self.lastUpdated = client.getSystemTime()
