@@ -18,8 +18,26 @@ local midiPlayer = {
     pageSize = 20,
     pingSize = 450,
     limitRoleback = 5,
-    localMode = false
+    localMode = false,
+    activeSong = nil
 }
+--#ENDREGION
+--#REGION utils
+local function padNumber(num, length)
+    local string = tostring(num)
+    while #string < length do
+        string = "0" .. string
+    end
+    return string
+end
+
+local function msToTimeString(val)
+    local seconds = padNumber(math.floor(val/1000) % 60,2)
+    local minutes = padNumber(math.floor(val/(1000 * 60)) % 60,2)
+
+
+    return minutes .. ":" .. seconds
+end
 --#ENDREGION
 --#REGION midi player cloud setup
 midiPlayer.avatarID[1],midiPlayer.avatarID[2],midiPlayer.avatarID[3],midiPlayer.avatarID[4] = client.uuidToIntArray(midiAvatar)
@@ -55,6 +73,75 @@ function events.tick()
                 actions.midiPlayer:setTitle("Midi Player")
                     :setOnLeftClick(function() action_wheel:setPage(midiPlayer.page) end)
             end
+        end
+    end
+end
+--#ENDREGION
+--#REGION song display
+local displayParent = models:newPart("midiPlayerDisplay")
+local displayCamera = displayParent:newPart("displayCamera","CAMERA")
+displayParent:setPos(0,45,0)
+local display = displayCamera:newText("songDisplay")
+display:setText("")
+    :setBackground(true)
+    :setAlignment("CENTER")
+    :setScale(0.25)
+    :setPos(0,4,0)
+    :setBackgroundColor(0,0,0,1)
+
+function events.tick()
+    local songName = midiPlayer.activeSong
+    if songName and string.len(songName) > 40 then
+        songName = string.sub(songName,0,40) .. "..."
+    end
+    if midiPlayer.instance then
+        if midiPlayer.instance.activeSong or midiPlayer.instance.songs[midiPlayer.activeSong] then
+            local song = midiPlayer.instance.songs[midiPlayer.activeSong]
+            local playing
+            if song.state == "PLAYING" then
+                playing = "\n§d:music2: playing ▶ ["
+            elseif song.state == "PAUSED" then
+                playing = "\n§d:music2: paused ⏸ ["
+            elseif song.state == "STOPPED" then
+                midiPlayer.activeSong = nil
+                display:setText()
+                    :setVisible(false)
+                return
+            end
+            local playBar = "\n§r"
+            local playProgress = math.ceil((song.time / song.length) * 25)
+            for i = 1, 25 do
+                if i >= playProgress then 
+                    playBar = playBar .. "§7█"
+                else
+                    playBar = playBar .. "§a█"
+                end
+            end
+            local text = songName .. playing .. msToTimeString(song.time) .. "/" .. msToTimeString(song.length) .. "] " .. playBar
+            display:setText(text)
+                :setVisible(true)
+        elseif midiPlayer.activeSong then
+            if midiPlayer.instance:getPermissionLevel() ~= "MAX" then
+                local text = songName .. "\n§d:music2: playing ▶" .. "\n§cMidi player avatar not set to MAX perm so could not play\nSet 'Midi Player Cloud' to MAX in 'disconnected avatars'"
+                display:setText(text)
+                    :setVisible(true)
+            else
+                local text = songName .. "\n§d:music2: playing ▶" .. "\n§cSong not received on client so could not play"
+                display:setText(text)
+                    :setVisible(true)
+            end
+        else
+            display:setText()
+                :setVisible(false)
+        end
+    else
+        if midiPlayer.activeSong then
+            local text = songName .. "\n§d:music2: playing ▶" .. "\n§cMidi player avatar not loaded so song could not play\nSet 'Midi Player Cloud' to MAX in 'disconnected avatars'"
+            display:setText(text)
+                :setVisible(true)
+        else
+            display:setText()
+                :setVisible(false)
         end
     end
 end
@@ -168,7 +255,9 @@ end
 --#REGION pings
 function pings.sendSong(ID,currentChunk,isLastChunk,data)
     if not midiPlayer.instance then return end
+    if midiPlayer.instance:getPermissionLevel() ~= "MAX" then return end
     if not midiPlayer.instance.songs[ID] then
+        if currentChunk ~= 1 then return end
         midiPlayer.instance:newSong(ID,"")
         midiPlayer.instance.songs[ID].songChunks = {}
     end
@@ -184,13 +273,21 @@ function pings.sendSong(ID,currentChunk,isLastChunk,data)
 end
 
 function pings.updateSong(ID,action)
-    if not midiPlayer.instance then return end
     if action == 1 then
-        midiPlayer.instance.songs[ID]:play()
+        if midiPlayer.instance and midiPlayer.instance:getPermissionLevel() == "MAX" and midiPlayer.instance.songs[ID] then
+            midiPlayer.instance.songs[ID]:play()
+        end
+        midiPlayer.activeSong = ID
     elseif action == 2 then
-       midiPlayer.instance.songs[ID]:pause()
+        if midiPlayer.instance and midiPlayer.instance:getPermissionLevel() == "MAX" and midiPlayer.instance.songs[ID] then
+            midiPlayer.instance.songs[ID]:pause()
+        end
+        midiPlayer.activeSong = ID
     elseif action == 0 then
-        midiPlayer.instance.songs[ID]:stop()
+        if midiPlayer.instance and midiPlayer.instance:getPermissionLevel() == "MAX" and midiPlayer.instance.songs[ID] then
+            midiPlayer.instance.songs[ID]:stop()
+        end
+        midiPlayer.activeSong = nil
     end
 end
 --#ENDREGION
@@ -273,22 +370,6 @@ local uploadStateLookup = {
         return ":folder:§e "
     end
 }
-
-local function padNumber(num, length)
-    local string = tostring(num)
-    while #string < length do
-        string = "0" .. string
-    end
-    return string
-end
-
-local function msToTimeString(val)
-    local seconds = padNumber(math.floor(val/1000) % 60,2)
-    local minutes = padNumber(math.floor(val/(1000 * 60)) % 60,2)
-
-
-    return minutes .. ":" .. seconds
-end
 
 local playStateLookup = {
     PLAYING = function(name)
@@ -456,22 +537,24 @@ local function toBits(num,bits)
     return reverse(t)
 end
 
+local cache = {}
 function numToVarLengthInt(num)
+    if cache[num] then return cache[num] end
     local numBits = math.max(1, select(2, math.frexp(num)))
     local numBytes = math.ceil(numBits / 7)
     local bits = toBits(num,numBits)
     for i = 1, (numBytes - 1) do
         i = (numBytes - i) * 7 + 1
-        if i ~= 8 then 
+        if i ~= 8 then
             table.insert(bits,i,1)
-        else   
+        else
             table.insert(bits,i,0)
         end
     end
     for i = 1, numBytes * 8 do
         i = (numBytes * 8 ) - i + 1
         if not bits[i] then
-            if i % 8 ~= 0 then 
+            if i % 8 ~= 0 then
                 bits[i] = 0
             else
                 if numBytes ~= 1 then
@@ -491,6 +574,7 @@ function numToVarLengthInt(num)
             bitVal = 0
         end
     end
+    cache[num] = string.reverse(val)
     return string.reverse(val)
 end
 
@@ -518,7 +602,7 @@ function midiPlayer.compressProject:new(ID,decompressedData)
     self.patternIndexString = ""
     self.patternOrderString = ""
     self.currentChunk = 0
-    self.chunkSize = 1000
+    self.chunkSize = 1500
     self.hasGeneratedPatterns = false
     self.hasReadPatterns = false
     self.hasPurgedEmptys = false
@@ -633,6 +717,7 @@ function events.tick()
                     song.totalChunks = math.floor(string.len(compressedData) / pingSize)
                     project:remove()
                     song.state = "QUEUED"
+                    cache = {}
                     break
                 end
             end
@@ -659,8 +744,10 @@ function events.MOUSE_PRESS(key,state,bitmast)
                     elseif selectedSongLocal.state == "LOCAL_PROCESSED" or selectedSongLocal.state == "GLOBAL" then
                         if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
                             midiPlayer.instance.songs[selectedSongLocal.ID]:play()
+                            midiPlayer.activeSong = selectedSongLocal.ID
                         elseif selectedSongPinged.state == "PLAYING" then
                             midiPlayer.instance.songs[selectedSongLocal.ID]:pause()
+                            midiPlayer.activeSong = selectedSongLocal.ID
                         end
                     end
                 else
@@ -685,6 +772,7 @@ function events.MOUSE_PRESS(key,state,bitmast)
                     if midiPlayer.localMode then
                         if state == "GLOBAL" or state == "LOCAL_PROCESSED" then
                             midiPlayer.instance.songs[midiPlayer.instance.activeSong]:stop()
+                            midiPlayer.activeSong = nil
                         end
                     else
                         if state == "GLOBAL" or state == "LOCAL_PROCESSED" then

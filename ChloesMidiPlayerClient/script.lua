@@ -16,6 +16,7 @@
 - move midi parser to insance, kill all parse projects if instance stops existing (this is the buffer leak issue)
 - lower pitch notes should sustain for longer than they currently do (listen to hall of the mountain king)
 - function to just get all the sounds in the midi player cloud
+- use just pos as target instead of a task
  ]]
 local instance
 

@@ -40,6 +40,10 @@ function instance:getTarget()
     return self.target
 end
 
+function instance:getPermissionLevel()
+    return avatar:getPermissionLevel()
+end
+
 function instance:updatePlayer()
     midiPlayer.updatePlayer(self)
     return self
