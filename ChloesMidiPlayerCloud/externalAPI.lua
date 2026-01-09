@@ -21,7 +21,7 @@ end
 
 function instance:remove()
     if self.activeSong then
-        self.songs[self.activeSong]:stop()
+        self.songs[self.activeSong]:remove()
     end
     midiPlayer.instances[self.ID] = nil
 end

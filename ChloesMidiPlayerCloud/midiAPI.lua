@@ -172,6 +172,7 @@ end
 function midi.song:remove()
     self.instance.songs[self.ID]:stop()
     self.instance.songs[self.ID] = nil
+    -- add removing parser projects here
 end
 
 function midi.track:new()

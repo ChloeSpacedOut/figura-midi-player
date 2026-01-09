@@ -1,6 +1,8 @@
 --#REGION global
 --#REGION setup
 local midiAvatar = "b0e11a12-eada-4f28-bb70-eb8903219fe5"
+local playerID = {}
+playerID[1],playerID[2],playerID[3],playerID[4] = client.uuidToIntArray(client:getViewer():getUUID())
 local directory = "ChloesMidiPlayer"
 
 local midiPlayer = {
@@ -19,7 +21,9 @@ local midiPlayer = {
     pingSize = 450,
     limitRoleback = 5,
     localMode = false,
-    activeSong = nil
+    activeSong = nil,
+    isModPressed = false,
+    isAltModPressed = false
 }
 --#ENDREGION
 --#REGION utils
@@ -72,6 +76,7 @@ function events.tick()
             if host:isHost() then
                 actions.midiPlayer:setTitle("Midi Player")
                     :setOnLeftClick(function() action_wheel:setPage(midiPlayer.page) end)
+                    :setItem("minecraft:jukebox")
             end
         end
     end
@@ -97,11 +102,17 @@ function events.tick()
     if midiPlayer.instance then
         if midiPlayer.instance.activeSong or midiPlayer.instance.songs[midiPlayer.activeSong] then
             local song = midiPlayer.instance.songs[midiPlayer.activeSong]
+            local playingType = "§d"
+            if host:isHost() then
+                if midiPlayer.songs[midiPlayer.activeSong].state == "LOCAL_PROCESSED" then
+                    playingType = "§e"
+                end
+            end
             local playing
             if song.state == "PLAYING" then
-                playing = "\n§d:music2: playing ▶ ["
+                playing = "\n" .. playingType .. ":music2: playing ▶ ["
             elseif song.state == "PAUSED" then
-                playing = "\n§d:music2: paused ⏸ ["
+                playing = "\n" .. playingType .. ":music2: paused ⏸ ["
             elseif song.state == "STOPPED" then
                 midiPlayer.activeSong = nil
                 display:setText()
@@ -114,7 +125,7 @@ function events.tick()
                 if i >= playProgress then 
                     playBar = playBar .. "§7█"
                 else
-                    playBar = playBar .. "§a█"
+                    playBar = playBar .. playingType .. "█"
                 end
             end
             local text = songName .. playing .. msToTimeString(song.time) .. "/" .. msToTimeString(song.length) .. "] " .. playBar
@@ -122,11 +133,11 @@ function events.tick()
                 :setVisible(true)
         elseif midiPlayer.activeSong then
             if midiPlayer.instance:getPermissionLevel() ~= "MAX" then
-                local text = songName .. "\n§d:music2: playing ▶" .. "\n§cMidi player avatar not set to MAX perm so could not play\nSet 'Midi Player Cloud' to MAX in 'disconnected avatars'"
+                local text = songName .. "\n§b:music2: playing ▶" .. "\n§cMidi player avatar not set to MAX perm so could not play\nSet 'Midi Player Cloud' to MAX in 'disconnected avatars'"
                 display:setText(text)
                     :setVisible(true)
             else
-                local text = songName .. "\n§d:music2: playing ▶" .. "\n§cSong not received on client so could not play"
+                local text = songName .. "\n§b:music2: playing ▶" .. "\n§cSong not received on client so could not play"
                 display:setText(text)
                     :setVisible(true)
             end
@@ -136,7 +147,7 @@ function events.tick()
         end
     else
         if midiPlayer.activeSong then
-            local text = songName .. "\n§d:music2: playing ▶" .. "\n§cMidi player avatar not loaded so song could not play\nSet 'Midi Player Cloud' to MAX in 'disconnected avatars'"
+            local text = songName .. "\n§b:music2: playing ▶" .. "\n§cMidi player avatar not loaded so song could not play\nSet 'Midi Player Cloud' to MAX in 'disconnected avatars'"
             display:setText(text)
                 :setVisible(true)
         else
@@ -256,12 +267,12 @@ end
 function pings.sendSong(ID,currentChunk,isLastChunk,data)
     if not midiPlayer.instance then return end
     if midiPlayer.instance:getPermissionLevel() ~= "MAX" then return end
-    if not midiPlayer.instance.songs[ID] then
+    if (not midiPlayer.instance.songs[ID]) or (not midiPlayer.instance.songs[ID].songChunks) then
         if currentChunk ~= 1 then return end
         midiPlayer.instance:newSong(ID,"")
         midiPlayer.instance.songs[ID].songChunks = {}
     end
-    midiPlayer.instance.songs[ID].songChunks[currentChunk] = data
+    midiPlayer.instance.songs[ID].songChunks[currentChunk] = data -- THIS CAN ERROR 
     if isLastChunk then
         local compressedSong = ""
         for _,chunk in ipairs(midiPlayer.instance.songs[ID].songChunks) do
@@ -321,6 +332,35 @@ function events.tick()
         end
     end
 end
+local midiPlayerHead = models:newPart("midiPlayerHead","Skull")
+local emojiHeadParent = midiPlayerHead:newPart("emojiHeadParent")
+local emojiHead = emojiHeadParent:newText("emojiHead")
+midiPlayerHead:setScale(1.5)
+    :setRot(32, -45, 0)
+    :setPos(10, 10, 0)
+local pivotOffset = vec(-4,-3.5,0)
+emojiHeadParent:setPos(pivotOffset)
+emojiHead:setPos(-pivotOffset)
+local function getEmojiHead(emoji,rot)
+    return world.newItem([=[minecraft:player_head{display:{Name:'{"text":"]=].."emoji_"..rot.."_"..emoji..[=["}'},SkullOwner:{Id:[I;]=]..playerID[1]..","..playerID[2]..","..playerID[3]..","..playerID[4]..[=[]}}]=])
+end
+
+function events.skull_render(delta,blockstate,itemstack,entity,string)
+    if (not blockstate) and (not entity) and string == "OTHER" then
+        local stringData = itemstack:getName()
+        if string.sub(stringData,0,5) == "emoji" then
+            local rot = string.sub(stringData,7,9)
+            emojiHead:setText(":" .. string.sub(stringData,11,-1) .. ":")
+            emojiHeadParent:setRot(vec(0,0,tonumber(rot)))
+        else
+            emojiHead:setText()
+        end
+    else
+        emojiHead:setText()
+    end
+
+end
+
 --#ENDREGION
 --#REGION action wheel
 local uploadStateLookup = {
@@ -367,16 +407,16 @@ local uploadStateLookup = {
         return ":checkmark:§a "
     end,
     LOCAL_PROCESSED = function(name)
-        return ":folder:§e "
+        return ":paper:§e "
     end
 }
 
 local playStateLookup = {
-    PLAYING = function(name)
-        return "§d:music2: ▶ [" .. msToTimeString(midiPlayer.instance.songs[name].time) .. "/" .. msToTimeString(midiPlayer.instance.songs[name].length) .. "] "
+    PLAYING = function(name,colour)
+        return colour .. ":music2: ▶ [" .. msToTimeString(midiPlayer.instance.songs[name].time) .. "/" .. msToTimeString(midiPlayer.instance.songs[name].length) .. "] "
     end,
-    PAUSED = function(name)
-        return "§d:music2: ⏸ [" .. msToTimeString(midiPlayer.instance.songs[name].time) .. "/" .. msToTimeString(midiPlayer.instance.songs[name].length) .. "] "
+    PAUSED = function(name,localState)
+        return colour .. ":music2: ⏸ [" .. msToTimeString(midiPlayer.instance.songs[name].time) .. "/" .. msToTimeString(midiPlayer.instance.songs[name].length) .. "] "
     end
 }
 
@@ -389,9 +429,17 @@ local function generateSongSelector()
         if midiPlayer.instance and midiPlayer.instance.songs[name] then
             playState = midiPlayer.instance.songs[name].state
         end
+        
+        local localState = midiPlayer.songs[name].state
+        local colour
+        if localState == "GLOBAL" then
+            colour = "§d"
+        elseif localState == "LOCAL_PROCESSED" then
+            colour = "§e"
+        end
         local stateIndicator = uploadStateLookup[uploadState](name)
         if playStateLookup[playState] then
-            stateIndicator = playStateLookup[playState](name)
+            stateIndicator = playStateLookup[playState](name,colour)
         end
         if string.len(name) > 40 then
             name = string.sub(name,0,40) .. "..."
@@ -412,6 +460,9 @@ end
 
 actions.back = midiPlayer.page:newAction()
     :setTitle("back")
+    :setItem(getEmojiHead("downvote","090"))
+    :setColor(vectors.hexToRGB("CE9119"))
+    :setHoverColor(vectors.hexToRGB("FFB727"))
     :setOnLeftClick(function()
         if midiPlayer.returnPage then
             action_wheel:setPage(midiPlayer.returnPage)
@@ -419,25 +470,41 @@ actions.back = midiPlayer.page:newAction()
     end)
 actions.settings = midiPlayer.page:newAction()
     :setTitle("settings")
+    :setItem(getEmojiHead("wrench","000"))
+    :setColor(vectors.hexToRGB("3F3F3F"))
+    :setHoverColor(vectors.hexToRGB("525252"))
     :setOnLeftClick(function()
         action_wheel:setPage(midiPlayer.settings)
     end)
 
 actions.songs = midiPlayer.page:newAction()
     :setTitle("songs")
+    :setItem(getEmojiHead("music2","000"))
+    :setColor(vectors.hexToRGB("371B44"))
+    :setHoverColor(vectors.hexToRGB("371B44"))
     :setOnScroll(function(scroll)
-        midiPlayer.selectedSong = math.clamp(midiPlayer.selectedSong - scroll,1,#midiPlayer.songIndex)
+        local scrollMod = 1
+        if midiPlayer.isAltModPressed then
+            scrollMod = midiPlayer.pageSize
+        end
+        midiPlayer.selectedSong = math.clamp(midiPlayer.selectedSong - scroll * scrollMod,1,#midiPlayer.songIndex)
         generateSongSelector()
     end)
 
 actions.settingsBack = midiPlayer.settings:newAction()
     :setTitle("back")
+    :setItem(getEmojiHead("downvote","090"))
+    :setColor(vectors.hexToRGB("CE9119"))
+    :setHoverColor(vectors.hexToRGB("FFB727"))
     :setOnLeftClick(function()
         action_wheel:setPage(midiPlayer.page)
     end)
 
 actions.pingSize = midiPlayer.settings:newAction()
     :setTitle("ping size \n" .. tostring(midiPlayer.pingSize) .. " b/s")
+    :setItem(getEmojiHead("ping3","000"))
+    :setColor(vectors.hexToRGB("1B4429"))
+    :setHoverColor(vectors.hexToRGB("1B4429"))
     :setOnScroll(function(scroll) 
         midiPlayer.pingSize = math.max(0,midiPlayer.pingSize + (scroll * 5))
         config:save("pingSize",midiPlayer.pingSize)
@@ -446,19 +513,39 @@ actions.pingSize = midiPlayer.settings:newAction()
 
 actions.limitRoleback = midiPlayer.settings:newAction()
     :setTitle("ratelimit roleback \n" .. tostring(midiPlayer.limitRoleback) .. " pings")
+    :setItem(getEmojiHead("alarm_clock","000"))
+    :setColor(vectors.hexToRGB("441B1B"))
+    :setHoverColor(vectors.hexToRGB("441B1B"))
     :setOnScroll(function(scroll) 
         midiPlayer.limitRoleback = math.max(0,midiPlayer.limitRoleback + (scroll))
         config:save("limitRoleback",midiPlayer.limitRoleback)
-        actions.limitRoleback:setTitle("limit roleback \n" .. tostring(midiPlayer.limitRoleback) .. " pings")
+        actions.limitRoleback:setTitle("ratelimit roleback \n" .. tostring(midiPlayer.limitRoleback) .. " pings")
     end)
 
 actions.localMode = midiPlayer.settings:newAction()
-    :setTitle("local mode")
+    :setTitle("toggle local mode")
     :setOnToggle(function(bool) 
         midiPlayer.localMode = bool
         config:save("localMode",midiPlayer.localMode)
+        if bool then
+            actions.localMode:setItem(getEmojiHead("folder","000"))
+            actions.localMode:setHoverColor(vectors.hexToRGB("635122"))
+        else
+            actions.localMode:setItem(getEmojiHead("globe","000"))
+            actions.localMode:setHoverColor(vectors.hexToRGB("234463"))
+        end
     end)
     :setToggled(midiPlayer.localMode)
+    :setColor(vectors.hexToRGB("1B3044"))
+    :setToggleColor(vectors.hexToRGB("44391B"))
+
+if midiPlayer.localMode then
+    actions.localMode:setItem(getEmojiHead("folder","000"))
+    actions.localMode:setHoverColor(vectors.hexToRGB("635122"))
+else
+    actions.localMode:setItem(getEmojiHead("globe","000"))
+    actions.localMode:setHoverColor(vectors.hexToRGB("234463"))
+end
 
 function midiPlayer:addMidiPlayer(page)
     midiPlayer.returnPage = page
@@ -726,7 +813,7 @@ function events.tick()
 end
 --#ENDREGION
 --#REGION action wheel controls
-function events.MOUSE_PRESS(key,state,bitmast)
+function events.MOUSE_PRESS(key,state)
     local actionWheelOpen = action_wheel:isEnabled()
     local currentPage = action_wheel:getCurrentPage():getTitle()
     local selectedAction = action_wheel:getSelected()
@@ -735,7 +822,11 @@ function events.MOUSE_PRESS(key,state,bitmast)
             local selectedSongLocal = midiPlayer.songs[midiPlayer.songIndex[midiPlayer.selectedSong]]
             local selectedSongPinged = midiPlayer.instance.songs[midiPlayer.songIndex[midiPlayer.selectedSong]]
             if key == 0 then
-                if midiPlayer.localMode then
+                local localMode = midiPlayer.localMode
+                if midiPlayer.isModPressed then
+                    localMode = not localMode
+                end
+                if localMode then
                     if selectedSongLocal.state == "LOCAL" then
                         midiPlayer.instance:newSong(selectedSongLocal.ID,selectedSongLocal.rawData)
                         midiPlayer.instance.songs[selectedSongLocal.ID].localMode = true
@@ -751,7 +842,7 @@ function events.MOUSE_PRESS(key,state,bitmast)
                         end
                     end
                 else
-                    if selectedSongLocal.state == "LOCAL" or selectedSongLocal.state == "LOCAL_PROCESSED" then
+                    if selectedSongLocal.state == "LOCAL" then
                         if selectedSongPinged then
                             selectedSongPinged:remove()
                         end
@@ -764,25 +855,82 @@ function events.MOUSE_PRESS(key,state,bitmast)
                         elseif selectedSongPinged.state == "PLAYING" then
                             pings.updateSong(selectedSongPinged.ID,2)
                         end
+                    elseif selectedSongLocal.state == "LOCAL_PROCESSED" then
+                        if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
+                            midiPlayer.instance.songs[selectedSongLocal.ID]:play()
+                            midiPlayer.activeSong = selectedSongLocal.ID
+                        elseif selectedSongPinged.state == "PLAYING" then
+                            midiPlayer.instance.songs[selectedSongLocal.ID]:pause()
+                            midiPlayer.activeSong = selectedSongLocal.ID
+                        end
                     end
                 end
             elseif key == 1 then
-                if midiPlayer.instance.activeSong then
-                    local state = midiPlayer.songs[midiPlayer.instance.activeSong].state
-                    if midiPlayer.localMode then
-                        if state == "GLOBAL" or state == "LOCAL_PROCESSED" then
-                            midiPlayer.instance.songs[midiPlayer.instance.activeSong]:stop()
-                            midiPlayer.activeSong = nil
+                if midiPlayer.isModPressed then
+                    local songID = midiPlayer.songIndex[midiPlayer.selectedSong]
+                    if midiPlayer.compressProjects[songID] then
+                        midiPlayer.compressProjects[songID]:remove()
+                    end
+                    if midiPlayer.decompressProjects[songID] then
+                        midiPlayer.decompressProjects[songID]:remove()
+                    end
+                    if midiPlayer.instance.songs[songID] then
+                        midiPlayer.instance.songs[songID]:remove()
+                    end
+                    midiPlayer.instance.songs[songID] = nil
+                    midiPlayer.songs[songID].state = "LOCAL"
+                    midiPlayer.songs[songID].currentChunk = 0
+                    for index,song in pairs(midiPlayer.pingQueue) do
+                        if song == songID then
+                            table.remove(midiPlayer.pingQueue,index)
                         end
-                    else
-                        if state == "GLOBAL" or state == "LOCAL_PROCESSED" then
-                            pings.updateSong(midiPlayer.instance.songs[midiPlayer.instance.activeSong].ID,0)
+                    end
+                    if midiPlayer.activeSong == songID then
+                        midiPlayer.activeSong = nil
+                    end
+                else
+                    if midiPlayer.instance.activeSong then
+                        local state = midiPlayer.songs[midiPlayer.instance.activeSong].state
+                        if midiPlayer.localMode then
+                            if state == "GLOBAL" or state == "LOCAL_PROCESSED" then
+                                midiPlayer.instance.songs[midiPlayer.instance.activeSong]:stop()
+                                midiPlayer.activeSong = nil
+                            end
+                        else
+                            if state == "GLOBAL" or state == "LOCAL_PROCESSED" then
+                                pings.updateSong(midiPlayer.instance.songs[midiPlayer.instance.activeSong].ID, 0)
+                            end
                         end
                     end
                 end
             end
         end
     end
+end
+
+function events.KEY_PRESS(key,state)
+    local actionWheelOpen = action_wheel:isEnabled()
+    local currentPage = action_wheel:getCurrentPage():getTitle()
+    local selectedAction = action_wheel:getSelected()
+    if actionWheelOpen and currentPage == "midiPlayerPage" and selectedAction == 3 then
+        if key == 340 then
+            if state == 1 or state == 2 then
+                midiPlayer.isModPressed = true
+                return true
+            elseif state == 0 then
+                midiPlayer.isModPressed = false
+            end
+        elseif key == 341 then
+            if state == 1 or state == 2 then
+                midiPlayer.isAltModPressed = true
+                return true
+            elseif state == 0 then
+                midiPlayer.isAltModPressed = false
+            end
+        end
+    end
+    --log(key,state)
+    --return true
 end
 --#ENDREGION
 --#REGION ping midi
