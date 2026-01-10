@@ -1,9 +1,12 @@
 --#REGION global
 --#REGION setup
-local midiAvatar = "b0e11a12-eada-4f28-bb70-eb8903219fe5"
 local playerID = {}
 playerID[1],playerID[2],playerID[3],playerID[4] = client.uuidToIntArray(client:getViewer():getUUID())
-local directory = "ChloesMidiPlayer"
+
+local playerConfig = {
+    midiAvatar = "b0e11a12-eada-4f28-bb70-eb8903219fe5",
+    directory = "curated_midis/mids"
+}
 
 local midiPlayer = {
     page = action_wheel:newPage("midiPlayerPage"),
@@ -14,16 +17,17 @@ local midiPlayer = {
     avatarID = {},
     instance = nil,
     songs = {},
-    songIndex = {},
+    directories = {},
+    currentDirectory = playerConfig.directory,
+    songTree = {},
     pingQueue = {},
-    selectedSong = 1,
     pageSize = 20,
     pingSize = 450,
     limitRoleback = 5,
     localMode = false,
     activeSong = nil,
-    isModPressed = false,
-    isAltModPressed = false
+    isAltModPressed = false,
+    isModPressed = false
 }
 --#ENDREGION
 --#REGION utils
@@ -44,7 +48,7 @@ local function msToTimeString(val)
 end
 --#ENDREGION
 --#REGION midi player cloud setup
-midiPlayer.avatarID[1],midiPlayer.avatarID[2],midiPlayer.avatarID[3],midiPlayer.avatarID[4] = client.uuidToIntArray(midiAvatar)
+midiPlayer.avatarID[1],midiPlayer.avatarID[2],midiPlayer.avatarID[3],midiPlayer.avatarID[4] = client.uuidToIntArray(playerConfig.midiAvatar)
 
 local midiPlayerHeadItem = world.newItem([=[minecraft:player_head{display:{Name:'{"text":"midiHead"}'},SkullOwner:{Id:[I;]=]..midiPlayer.avatarID[1]..","..midiPlayer.avatarID[2]..","..midiPlayer.avatarID[3]..","..midiPlayer.avatarID[4]..[=[]}}]=])
 local worldPart = models:newPart("midiPLayerHead","WORLD")
@@ -68,7 +72,7 @@ end
 
 function events.tick()
     if not midiPlayer.hasMadeInstance then
-        midiPlayer.midiAPI = world.avatarVars()[midiAvatar]
+        midiPlayer.midiAPI = world.avatarVars()[playerConfig.midiAvatar]
         if midiPlayer.midiAPI and midiPlayer.midiAPI.newInstance then
             local player = world.getEntity(avatar:getUUID())
             midiPlayer.instance = midiPlayer.midiAPI.newInstance(player:getName(),player)
@@ -319,6 +323,7 @@ local localMode = config:load("localMode")
 if localMode then
     midiPlayer.localMode = localMode
 end
+
 function events.tick()
     if midiPlayer.instance then
         for k,v in pairs(midiPlayer.instance.songs) do
@@ -415,15 +420,36 @@ local playStateLookup = {
     PLAYING = function(name,colour)
         return colour .. ":music2: ▶ [" .. msToTimeString(midiPlayer.instance.songs[name].time) .. "/" .. msToTimeString(midiPlayer.instance.songs[name].length) .. "] "
     end,
-    PAUSED = function(name,localState)
+    PAUSED = function(name,colour)
         return colour .. ":music2: ⏸ [" .. msToTimeString(midiPlayer.instance.songs[name].time) .. "/" .. msToTimeString(midiPlayer.instance.songs[name].length) .. "] "
     end
 }
 
 local function generateSongSelector()
-    local songTitle = "song selector \n"
-    local selectedPage = math.floor((midiPlayer.selectedSong - 1) / midiPlayer.pageSize)
-    for k,name in pairs(midiPlayer.songIndex) do
+    
+    local directory = midiPlayer.directories[midiPlayer.currentDirectory]
+    local folder = directory.ID
+    if string.len(folder) > 45 then
+        folder =  "..." .. string.sub(folder,-45,-1)
+    end
+    local songTitle = "§lsong selector\n§7" .. folder .. "\n"
+    local selectedPage = math.floor((directory.selectedIndex - 1) / midiPlayer.pageSize)
+    local numFolders = #directory.childrenIndex
+    local numSongs = #directory.songIndex
+    local numIndex = numFolders + numSongs
+    for k,childDirectory in pairs(directory.childrenIndex) do
+        local currentPage = math.floor((k - 1) / midiPlayer.pageSize)
+        if currentPage == selectedPage then
+            if k == directory.selectedIndex then
+                songTitle = songTitle .. "§r→ :folder: §r§n" .. childDirectory.name .. "\n"
+            else
+                songTitle = songTitle .. "§r   :folder: §e" .. childDirectory.name .. "\n"
+            end
+        end
+        --log(childDirectory.name)
+    end
+    
+    for k,name in pairs(directory.songIndex) do
         local uploadState = midiPlayer.songs[name].state
         local playState
         if midiPlayer.instance and midiPlayer.instance.songs[name] then
@@ -444,16 +470,16 @@ local function generateSongSelector()
         if string.len(name) > 40 then
             name = string.sub(name,0,40) .. "..."
         end
-        local currentPage = math.floor((k - 1) / midiPlayer.pageSize)
+        local currentPage = math.floor((k + numFolders - 1) / midiPlayer.pageSize)
         if currentPage == selectedPage then
-            if k == midiPlayer.selectedSong then
-                songTitle = songTitle .. "§r→ " .. stateIndicator .. "§r§n" .. name .. "\n§r"
+            if (k + numFolders) == directory.selectedIndex then
+                songTitle = songTitle .. "§r→ " .. stateIndicator .. "§r§n" .. name .. "\n"
             else
-                songTitle = songTitle .. "   " .. stateIndicator .. name  .. "\n"
+                songTitle = songTitle .. "§r   " .. stateIndicator .. name  .. "\n"
             end
         end
     end
-    local lastPage = math.floor((#midiPlayer.songIndex - 1) / midiPlayer.pageSize)
+    local lastPage = math.floor((#directory.songIndex - 1) / midiPlayer.pageSize)
     songTitle = songTitle .. "§rpage " .. selectedPage + 1 .. " of " .. lastPage + 1
     actions.songs:setTitle(songTitle)
 end
@@ -483,11 +509,12 @@ actions.songs = midiPlayer.page:newAction()
     :setColor(vectors.hexToRGB("371B44"))
     :setHoverColor(vectors.hexToRGB("371B44"))
     :setOnScroll(function(scroll)
+        local directory = midiPlayer.directories[midiPlayer.currentDirectory]
         local scrollMod = 1
-        if midiPlayer.isAltModPressed then
+--[[         if midiPlayer.isAltModPressed then
             scrollMod = midiPlayer.pageSize
-        end
-        midiPlayer.selectedSong = math.clamp(midiPlayer.selectedSong - scroll * scrollMod,1,#midiPlayer.songIndex)
+        end ]]
+        directory.selectedIndex = math.clamp(directory.selectedIndex - scroll * scrollMod,1,#directory.childrenIndex + #directory.songIndex)
         generateSongSelector()
     end)
 
@@ -562,50 +589,77 @@ function events.tick()
         generateSongSelector()
     end
 end
+
 --#ENDREGION
 --#REGION song setup
+
 midiPlayer.song = {}
 midiPlayer.song.__index = midiPlayer.song
 
-function midiPlayer.song:new(name,rawData)    
+function midiPlayer.song:new(name,path)  
     self = setmetatable({},midiPlayer.song)
     self.ID = name
-    self.rawData = rawData
+    self.path = path
+    self.rawData = nil
     self.state = "LOCAL"
     self.currentChunk = 0
     self.nameLength = string.len(name)
     self.pingSize = midiPlayer.pingSize
     return self
 end
---#ENDREGION
---#REGION compress midi
+
+midiPlayer.directory = {}
+midiPlayer.directory.__index = midiPlayer.directory
+
+function midiPlayer.directory:new(directory,name,parent)
+    self = setmetatable({},midiPlayer.directory)
+    self.ID = directory
+    self.name = name
+    self.parent = parent
+    self.childrenIndex = {}
+    self.songIndex = {}
+    self.selectedIndex = 1
+    return self
+end
+
 local function fast_read_byte_array(path)
     local stream = file:openReadStream(path)
     local future = stream:readAsync()
     repeat until future:isDone()
+    stream:close()
     return future:getValue()--[[@as string]]
 end
 
-local function getMidiData()
-    if not file:isDirectory(directory) then
-        file:mkdir(directory)
-        log('"'..directory..'" folder has been created')
-    end
-    for k,fileName in pairs(file:list(directory)) do
-        local path = directory.."/"..fileName
+local function getMidiData(directory)
+    for k,fileName in pairs(file:list(directory.ID)) do
+        local path = directory.ID.."/"..fileName
         local suffix = string.sub(fileName,-4,-1)
         local name = string.sub(fileName,1,-5)
+        
+        if not path:find("%.[^.]-$") then
+            midiPlayer.directories[path] = midiPlayer.directory:new(path,fileName,directory)
+            table.insert(directory.childrenIndex,midiPlayer.directories[path])
+            getMidiData(midiPlayer.directories[path])
+        end
         if suffix == ".mid" and (not midiPlayer.songs[name]) then
-            local midiData = fast_read_byte_array(path)
-            midiPlayer.songs[name] = midiPlayer.song:new(name,midiData)
-            table.insert(midiPlayer.songIndex,name)
+            midiPlayer.songs[name] = midiPlayer.song:new(name,path)
+            table.insert(directory.songIndex,name)
         end
     end
 end
 
-getMidiData()
-table.sort(midiPlayer.songIndex)
+if not playerConfig.directory:find("%.[^.]-$") then
+    file:mkdir(playerConfig.directory)
+end
+
+midiPlayer.directories[playerConfig.directory] = midiPlayer.directory:new(playerConfig.directory,playerConfig.directory)
+getMidiData(midiPlayer.directories[playerConfig.directory])
+--[[ table.sort(midiPlayer.songIndex)
+log(midiPlayer.songIndex) ]]
 generateSongSelector()
+
+--#ENDREGION
+--#REGION compress midi
 
 local function reverse(tab)
     for i = 1, #tab/2, 1 do
@@ -819,55 +873,65 @@ function events.MOUSE_PRESS(key,state)
     local selectedAction = action_wheel:getSelected()
     if actionWheelOpen and currentPage == "midiPlayerPage" and selectedAction == 3 then
         if state == 1 then
-            local selectedSongLocal = midiPlayer.songs[midiPlayer.songIndex[midiPlayer.selectedSong]]
-            local selectedSongPinged = midiPlayer.instance.songs[midiPlayer.songIndex[midiPlayer.selectedSong]]
+            local directory = midiPlayer.directories[midiPlayer.currentDirectory]
+            local songIndex = directory.selectedIndex - #directory.childrenIndex
+            local selectedSongLocal = midiPlayer.songs[directory.songIndex[songIndex]]
+            local selectedSongPinged = midiPlayer.instance.songs[directory.songIndex[songIndex]]
             if key == 0 then
-                local localMode = midiPlayer.localMode
-                if midiPlayer.isModPressed then
-                    localMode = not localMode
-                end
-                if localMode then
-                    if selectedSongLocal.state == "LOCAL" then
-                        midiPlayer.instance:newSong(selectedSongLocal.ID,selectedSongLocal.rawData)
-                        midiPlayer.instance.songs[selectedSongLocal.ID].localMode = true
-                        midiPlayer.instance.songs[selectedSongLocal.ID]:load()
-                        selectedSongLocal.state = "PARSING"
-                    elseif selectedSongLocal.state == "LOCAL_PROCESSED" or selectedSongLocal.state == "GLOBAL" then
-                        if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
-                            midiPlayer.instance.songs[selectedSongLocal.ID]:play()
-                            midiPlayer.activeSong = selectedSongLocal.ID
-                        elseif selectedSongPinged.state == "PLAYING" then
-                            midiPlayer.instance.songs[selectedSongLocal.ID]:pause()
-                            midiPlayer.activeSong = selectedSongLocal.ID
-                        end
-                    end
+                if directory.selectedIndex <= #directory.childrenIndex then
+                    midiPlayer.currentDirectory = directory.childrenIndex[directory.selectedIndex].ID
                 else
-                    if selectedSongLocal.state == "LOCAL" then
-                        if selectedSongPinged then
-                            selectedSongPinged:remove()
+                    if not selectedSongLocal then return end
+                    local localMode = midiPlayer.localMode
+                    if midiPlayer.isAltModPressed then
+                        localMode = not localMode
+                    end
+                    if localMode then
+                        if selectedSongLocal.state == "LOCAL" then
+                            selectedSongLocal.rawData = fast_read_byte_array(selectedSongLocal.path)
+                            midiPlayer.instance:newSong(selectedSongLocal.ID, selectedSongLocal.rawData)
+                            midiPlayer.instance.songs[selectedSongLocal.ID].localMode = true
+                            midiPlayer.instance.songs[selectedSongLocal.ID]:load()
+                            selectedSongLocal.state = "PARSING"
+                        elseif selectedSongLocal.state == "LOCAL_PROCESSED" or selectedSongLocal.state == "GLOBAL" then
+                            if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
+                                midiPlayer.instance.songs[selectedSongLocal.ID]:play()
+                                midiPlayer.activeSong = selectedSongLocal.ID
+                            elseif selectedSongPinged.state == "PLAYING" then
+                                midiPlayer.instance.songs[selectedSongLocal.ID]:pause()
+                                midiPlayer.activeSong = selectedSongLocal.ID
+                            end
                         end
-                        selectedSongLocal.pingSize = midiPlayer.pingSize
-                        midiPlayer.compressProjects[selectedSongLocal.ID] = midiPlayer.compressProject:new(selectedSongLocal.ID,selectedSongLocal.rawData)
-                        selectedSongLocal.state = "COMPRESSING"
-                    elseif selectedSongLocal.state == "GLOBAL" then
-                        if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
-                            pings.updateSong(selectedSongPinged.ID,1)
-                        elseif selectedSongPinged.state == "PLAYING" then
-                            pings.updateSong(selectedSongPinged.ID,2)
-                        end
-                    elseif selectedSongLocal.state == "LOCAL_PROCESSED" then
-                        if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
-                            midiPlayer.instance.songs[selectedSongLocal.ID]:play()
-                            midiPlayer.activeSong = selectedSongLocal.ID
-                        elseif selectedSongPinged.state == "PLAYING" then
-                            midiPlayer.instance.songs[selectedSongLocal.ID]:pause()
-                            midiPlayer.activeSong = selectedSongLocal.ID
+                    else
+                        if selectedSongLocal.state == "LOCAL" then
+                            if selectedSongPinged then
+                                selectedSongPinged:remove()
+                            end
+                            selectedSongLocal.pingSize = midiPlayer.pingSize
+                            selectedSongLocal.rawData = fast_read_byte_array(selectedSongLocal.path)
+                            midiPlayer.compressProjects[selectedSongLocal.ID] = midiPlayer.compressProject:new(selectedSongLocal.ID, selectedSongLocal.rawData)
+                            selectedSongLocal.state = "COMPRESSING"
+                        elseif selectedSongLocal.state == "GLOBAL" then
+                            if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
+                                pings.updateSong(selectedSongPinged.ID, 1)
+                            elseif selectedSongPinged.state == "PLAYING" then
+                                pings.updateSong(selectedSongPinged.ID, 2)
+                            end
+                        elseif selectedSongLocal.state == "LOCAL_PROCESSED" then
+                            if selectedSongPinged.state == "STOPPED" or selectedSongPinged.state == "PAUSED" then
+                                midiPlayer.instance.songs[selectedSongLocal.ID]:play()
+                                midiPlayer.activeSong = selectedSongLocal.ID
+                            elseif selectedSongPinged.state == "PLAYING" then
+                                midiPlayer.instance.songs[selectedSongLocal.ID]:pause()
+                                midiPlayer.activeSong = selectedSongLocal.ID
+                            end
                         end
                     end
                 end
             elseif key == 1 then
-                if midiPlayer.isModPressed then
-                    local songID = midiPlayer.songIndex[midiPlayer.selectedSong]
+                if midiPlayer.isAltModPressed and (directory.selectedIndex > #directory.childrenIndex) then
+                    if not selectedSongLocal then return end
+                    local songID = directory.songIndex[songIndex]
                     if midiPlayer.compressProjects[songID] then
                         midiPlayer.compressProjects[songID]:remove()
                     end
@@ -880,15 +944,20 @@ function events.MOUSE_PRESS(key,state)
                     midiPlayer.instance.songs[songID] = nil
                     midiPlayer.songs[songID].state = "LOCAL"
                     midiPlayer.songs[songID].currentChunk = 0
-                    for index,song in pairs(midiPlayer.pingQueue) do
+                    for index, song in pairs(midiPlayer.pingQueue) do
                         if song == songID then
-                            table.remove(midiPlayer.pingQueue,index)
+                            table.remove(midiPlayer.pingQueue, index)
                         end
                     end
                     if midiPlayer.activeSong == songID then
                         midiPlayer.activeSong = nil
                     end
+                elseif midiPlayer.isModPressed then
+                    if directory.parent then
+                        midiPlayer.currentDirectory = directory.parent.ID
+                    end
                 else
+                    if not selectedSongLocal then return end
                     if midiPlayer.instance.activeSong then
                         local state = midiPlayer.songs[midiPlayer.instance.activeSong].state
                         if midiPlayer.localMode then
