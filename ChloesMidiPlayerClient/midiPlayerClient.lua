@@ -654,8 +654,6 @@ end
 
 midiPlayer.directories[playerConfig.directory] = midiPlayer.directory:new(playerConfig.directory,playerConfig.directory)
 getMidiData(midiPlayer.directories[playerConfig.directory])
---[[ table.sort(midiPlayer.songIndex)
-log(midiPlayer.songIndex) ]]
 generateSongSelector()
 
 --#ENDREGION
@@ -777,8 +775,6 @@ function events.tick()
                 if buffer:getPosition() == project.bufferLength then
                     table.insert(project.patternIndex, currentBytes)
                     project.existingPatterns[currentBytes] = #project.patternIndex
-                end
-                if buffer:getPosition() == project.bufferLength then
                     buffer:setPosition(0)
                     project.currentChunk = 0
                     project.readBytes = ""
@@ -790,7 +786,8 @@ function events.tick()
             until (buffer:getPosition() == project.bufferLength) or (buffer:getPosition() >= (project.currentChunk * project.chunkSize))
         elseif not project.hasReadPatterns then
             repeat
-                local currentBytes = project.readBytes ..buffer:readByteArray(1)
+                local readByte = buffer:readByteArray(1)
+                local currentBytes = project.readBytes .. readByte
                 if not project.existingPatterns[currentBytes] then
                     project.patternCount[project.readBytes] = project.patternCount[project.readBytes] + 1
                     table.insert(project.patternOrder, project.existingPatterns[project.readBytes])
@@ -803,7 +800,10 @@ function events.tick()
                     project.readBytes = currentBytes
                 end
                 if buffer:getPosition() == project.bufferLength then
-                    if project.readBytes ~= "" then
+                    if project.readBytes == "" then
+                        project.patternCount[readByte] = project.patternCount[readByte] + 1
+                        table.insert(project.patternOrder, project.existingPatterns[readByte])
+                    else
                         project.patternCount[currentBytes] = project.patternCount[currentBytes] + 1
                         table.insert(project.patternOrder, project.existingPatterns[currentBytes])
                     end
