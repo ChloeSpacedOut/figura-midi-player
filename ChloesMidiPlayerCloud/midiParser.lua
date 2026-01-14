@@ -37,6 +37,19 @@ local function variableLengthBitsToNum(bits)
     return num
 end
 
+local function readVariableLengthInt(buffer,bufferLength)
+    local startPos = buffer:getPosition()
+    repeat
+        local val = buffer:read()
+        local signBit = bit32.extract(val,7)
+    until signBit == 0 or buffer:getPosition() == bufferLength
+    local endPos = buffer:getPosition()
+    buffer:setPosition(startPos)
+    local bits = readBits(buffer,endPos - startPos)
+    local num = variableLengthBitsToNum(bits)
+    return num
+end
+
 midiParser.metaEvents = {
     [0x00] = function(buffer,currentTrack,deltaTime,eventLength)
         table.insert(currentTrack.sequence,{
@@ -147,8 +160,7 @@ midiParser.metaEvents = {
         table.insert(currentTrack.sequence,{
             type = "sequencerSpecificMetaEvent",
             deltaTime = deltaTime,
-            id = buffer:read(),
-            data = buffer:readString(eventLength)
+            data = buffer:readBase64(eventLength)
         })
     end,
     [0x21] = function(buffer,currentTrack,deltaTime,eventLength)
@@ -224,6 +236,23 @@ midiParser.voiceMessages = {
     end
 }
 
+midiParser.sysexEvents = {
+    [0xF0] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
+            type = "sysEx",
+            deltaTime = deltaTime,
+            data = buffer:readBase64(eventLength)
+        })
+    end,
+    [0xF7] = function(buffer,currentTrack,deltaTime,eventLength)
+        table.insert(currentTrack.sequence,{
+            type = "sysExEscape",
+            deltaTime = deltaTime,
+            data = buffer:readBase64(eventLength)
+        })
+    end
+}
+
 midiParser.project = {}
 midiParser.project.__index = midiParser.project
 
@@ -245,7 +274,7 @@ function midiParser.project:new(midiSong,shouldQueueSong)
     self.hasParsedMidi = false
     self.hasBakedTimes = false
     self.currentTrack = nil
-    self.lastStatusByte = nil
+    self.lastStatusBits = nil
     self.lastChannel = nil
     self.warns = {}
     return self
@@ -278,7 +307,8 @@ function midiParser.updateParser(midi)
             break
         end
         if not project.hasReadHeader then
-            if buffer:readString(4) == "MThd" then
+            local fileHeader = buffer:readString(4)
+            if fileHeader == "MThd" then
                 project.hasReadHeader = true
                 buffer:setPosition(buffer:getPosition()+4)
                 project.song.format = buffer:readShort()
@@ -291,14 +321,15 @@ function midiParser.updateParser(midi)
                     project.song.ticksPerFrame = bitsToNum(bits,0,7)
                 end
             else
-                log("Midi file header was invalid, cancled parsing " .. project.ID)
+                log("Midi file header was invalid, cancled parsing " .. project.ID .. ". Recieved data: " .. fileHeader)
                 project:remove()
                 return
             end
         elseif not project.hasParsedMidi then
             project.song.loadProgress = (project.currentChunk * project.chunkSize) / project.buffer:getLength() / 2
             if not project.currentTrack then
-                if buffer:readString(4) == "MTrk" then
+                local trackHeader = buffer:readString(4)
+                if trackHeader == "MTrk" then
                     project.currentTrack = midi.track:new()
                     project.currentTrack.length = buffer:readInt()
                     project.currentTrack.eventStartPos = buffer:getPosition()
@@ -306,47 +337,46 @@ function midiParser.updateParser(midi)
                     exitParser(project)
                     return
                 else
-                    log("Midi track header was invalid, cancled parsing " .. project.ID)
+                    log("Midi track header was invalid, cancled parsing " .. project.ID .. ". Recieved data: " .. trackHeader .. " at position " .. string.format("%X", buffer:getPosition()))
                     project:remove()
                     return
                 end
             end
             repeat
-                local startPos = buffer:getPosition()
-                repeat
-                    local val = buffer:read()
-                    local signBit = bit32.extract(val, 7)
-                until signBit == 0 or buffer:getPosition() == bufferLength
-                local endPos = buffer:getPosition()
-                buffer:setPosition(startPos)
-                local deltaBits = readBits(buffer, endPos - startPos)
-                local deltaTime = variableLengthBitsToNum(deltaBits)
-                buffer:setPosition(endPos)
+                local deltaTime = readVariableLengthInt(buffer)
                 local nextByte = buffer:read()
                 if nextByte == 255 then
                     local type = buffer:read()
-                    local eventLength = buffer:read()
+                    local eventLength = readVariableLengthInt(buffer)
+                    --log("metaEvent",nextByte,string.format("%X", type),eventLength,string.format("%X", buffer:getPosition()))
                     if midiParser.metaEvents[type] then
                         midiParser.metaEvents[type](buffer, project.currentTrack, deltaTime, eventLength)
+                    else
+                        buffer:readBase64(eventLength)
                     end
                 else
                     buffer:setPosition(buffer:getPosition() - 1)
+                    local statusByte = buffer:read()
+                    buffer:setPosition(buffer:getPosition() - 1)
                     local nextBits = readBits(buffer, 1)
-                    local statusByte = bitsToNum(nextBits, 4, 7)
+                    local statusBits = bitsToNum(nextBits, 4, 7)
                     local channel = bitsToNum(nextBits, 0, 3)
-                    if midiParser.voiceMessages[statusByte] then
-                        midiParser.voiceMessages[statusByte](buffer, project.currentTrack, deltaTime, channel)
-                        project.lastStatusByte = statusByte
+                    if midiParser.voiceMessages[statusBits] then
+                        --log("voiceMessage",string.format("%X", statusBits),channel,string.format("%X", buffer:getPosition()))
+                        midiParser.voiceMessages[statusBits](buffer, project.currentTrack, deltaTime, channel)
+                        project.lastStatusBits = statusBits
                         project.lastChannel = channel
+                    elseif midiParser.sysexEvents[statusByte] then
+                        local eventLength = readVariableLengthInt(buffer)
+                        --log("sysexEvent",string.format("%X", statusByte),eventLength,string.format("%X", buffer:getPosition()))
+                        midiParser.sysexEvents[statusByte](buffer, project.currentTrack, deltaTime, eventLength)
                     else
-                        if bit32.extract(statusByte, 7) == 0 and project.lastStatusByte then
+                        if bit32.extract(statusBits, 7) == 0 and project.lastStatusBits then
                             buffer:setPosition(buffer:getPosition() - 1)
-                            midiParser.voiceMessages[project.lastStatusByte](buffer, project.currentTrack, deltaTime,
-                                project.lastChannel)
+                            --log("compactVoiceMessage",string.format("%X", project.lastStatusBits),project.lastChannel,string.format("%X", buffer:getPosition()))
+                            midiParser.voiceMessages[project.lastStatusBits](buffer, project.currentTrack, deltaTime,project.lastChannel)
                         else
-                            local warn = "Failed reading byte " ..
-                            string.format("%X", buffer:getPosition() - 1) ..
-                            " with value " .. string.format("%X", nextByte)
+                            local warn = "Failed reading byte " .. string.format("%X", buffer:getPosition() - 1) .. " with value " .. string.format("%X", nextByte)
                             table.insert(project.warns, warn)
                         end
                     end

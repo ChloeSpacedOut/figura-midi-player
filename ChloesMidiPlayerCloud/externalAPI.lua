@@ -64,3 +64,4 @@ local function newInstance(ID,target)
 end
 
 avatar:store("newInstance",newInstance)
+avatar:store("sessionID",math.random())

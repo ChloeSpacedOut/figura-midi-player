@@ -104,7 +104,7 @@ function events.tick()
         songName = string.sub(songName,0,40) .. "..."
     end
     if midiPlayer.instance then
-        if midiPlayer.instance.activeSong or midiPlayer.instance.songs[midiPlayer.activeSong] then
+        if (midiPlayer.instance.activeSong and midiPlayer.instance.songs[midiPlayer.activeSong]) or midiPlayer.instance.songs[midiPlayer.activeSong] then
             local song = midiPlayer.instance.songs[midiPlayer.activeSong]
             local playingType = "§d"
             if host:isHost() then
@@ -434,52 +434,56 @@ local function generateSongSelector()
     end
     local songTitle = "§lsong selector\n§7" .. folder .. "\n"
     local selectedPage = math.floor((directory.selectedIndex - 1) / midiPlayer.pageSize)
+    local selectedPageMin = selectedPage * midiPlayer.pageSize + 1
+    local selectedPageMax = (selectedPage + 1) * midiPlayer.pageSize
     local numFolders = #directory.childrenIndex
+    local foldersOnPage = math.max(numFolders - (selectedPage * (midiPlayer.pageSize)),0) %  midiPlayer.pageSize
     local numSongs = #directory.songIndex
     local numIndex = numFolders + numSongs
-    for k,childDirectory in pairs(directory.childrenIndex) do
-        local currentPage = math.floor((k - 1) / midiPlayer.pageSize)
-        if currentPage == selectedPage then
+    for k = selectedPageMin, selectedPageMax do
+        if directory.childrenIndex[k] then
             if k == directory.selectedIndex then
-                songTitle = songTitle .. "§r→ :folder: §r§n" .. childDirectory.name .. "\n"
+                songTitle = songTitle .. "§r→ :folder: §r§n" .. directory.childrenIndex[k].name .. "\n"
             else
-                songTitle = songTitle .. "§r   :folder: §e" .. childDirectory.name .. "\n"
+                songTitle = songTitle .. "§r   :folder: §e" .. directory.childrenIndex[k].name .. "\n"
             end
         end
-        --log(childDirectory.name)
     end
-    
-    for k,name in pairs(directory.songIndex) do
-        local uploadState = midiPlayer.songs[name].state
-        local playState
-        if midiPlayer.instance and midiPlayer.instance.songs[name] then
-            playState = midiPlayer.instance.songs[name].state
+    for k = selectedPageMin, selectedPageMax do
+        local name = directory.songIndex[k + (foldersOnPage - numFolders)]
+        if name then
+            local uploadState = midiPlayer.songs[name].state
+            local playState
+            if midiPlayer.instance and midiPlayer.instance.songs[name] then
+                playState = midiPlayer.instance.songs[name].state
+            end
+            
+            local localState = midiPlayer.songs[name].state
+            local colour
+            if localState == "GLOBAL" then
+                colour = "§d"
+            elseif localState == "LOCAL_PROCESSED" then
+                colour = "§e"
+            end
+            local stateIndicator = uploadStateLookup[uploadState](name)
+            if playStateLookup[playState] then
+                stateIndicator = playStateLookup[playState](name,colour)
+            end
+            if string.len(name) > 40 then
+                name = string.sub(name,0,40) .. "..."
+            end
+            local currentPage = math.floor((k + foldersOnPage - 1) / midiPlayer.pageSize)
+            if currentPage == selectedPage then
+                if (k + foldersOnPage) == directory.selectedIndex then
+                    songTitle = songTitle .. "§r→ " .. stateIndicator .. "§r§n" .. name .. "\n"
+                else
+                    songTitle = songTitle .. "§r   " .. stateIndicator .. name  .. "\n"
+                end
+            end
         end
         
-        local localState = midiPlayer.songs[name].state
-        local colour
-        if localState == "GLOBAL" then
-            colour = "§d"
-        elseif localState == "LOCAL_PROCESSED" then
-            colour = "§e"
-        end
-        local stateIndicator = uploadStateLookup[uploadState](name)
-        if playStateLookup[playState] then
-            stateIndicator = playStateLookup[playState](name,colour)
-        end
-        if string.len(name) > 40 then
-            name = string.sub(name,0,40) .. "..."
-        end
-        local currentPage = math.floor((k + numFolders - 1) / midiPlayer.pageSize)
-        if currentPage == selectedPage then
-            if (k + numFolders) == directory.selectedIndex then
-                songTitle = songTitle .. "§r→ " .. stateIndicator .. "§r§n" .. name .. "\n"
-            else
-                songTitle = songTitle .. "§r   " .. stateIndicator .. name  .. "\n"
-            end
-        end
     end
-    local lastPage = math.floor((#directory.songIndex - 1) / midiPlayer.pageSize)
+    local lastPage = math.floor((numIndex - 1) / midiPlayer.pageSize)
     songTitle = songTitle .. "§rpage " .. selectedPage + 1 .. " of " .. lastPage + 1
     actions.songs:setTitle(songTitle)
 end
@@ -514,7 +518,7 @@ actions.songs = midiPlayer.page:newAction()
 --[[         if midiPlayer.isAltModPressed then
             scrollMod = midiPlayer.pageSize
         end ]]
-        directory.selectedIndex = math.clamp(directory.selectedIndex - scroll * scrollMod,1,#directory.childrenIndex + #directory.songIndex)
+        directory.selectedIndex = math.clamp(directory.selectedIndex - scroll * scrollMod,1,#directory.childrenIndex + #directory.songIndex )
         generateSongSelector()
     end)
 
@@ -525,6 +529,9 @@ actions.settingsBack = midiPlayer.settings:newAction()
     :setHoverColor(vectors.hexToRGB("FFB727"))
     :setOnLeftClick(function()
         action_wheel:setPage(midiPlayer.page)
+        actions.refreshFiles:setItem(getEmojiHead("newspaper","000"))
+            :setColor(vectors.hexToRGB("3A3A3A"))
+            :setHoverColor(vectors.hexToRGB("4E4E4E"))
     end)
 
 actions.pingSize = midiPlayer.settings:newAction()
@@ -565,6 +572,21 @@ actions.localMode = midiPlayer.settings:newAction()
     :setToggled(midiPlayer.localMode)
     :setColor(vectors.hexToRGB("1B3044"))
     :setToggleColor(vectors.hexToRGB("44391B"))
+
+actions.refreshFiles = midiPlayer.settings:newAction()
+    :setTitle("refesh files")
+    :setItem(getEmojiHead("newspaper","000"))
+    :setOnLeftClick(function()
+        for _,directory in pairs(midiPlayer.directories) do
+            directory.hasScannedDirectory = false
+        end
+        midiPlayer.getMidiData(midiPlayer.directories[midiPlayer.currentDirectory])
+        actions.refreshFiles:setItem(getEmojiHead("checkmark","000"))
+            :setColor(vectors.hexToRGB("1B4429"))
+            :setHoverColor(vectors.hexToRGB("1B4429"))
+    end)
+    :setColor(vectors.hexToRGB("3A3A3A"))
+    :setHoverColor(vectors.hexToRGB("4E4E4E"))
 
 if midiPlayer.localMode then
     actions.localMode:setItem(getEmojiHead("folder","000"))
@@ -616,6 +638,7 @@ function midiPlayer.directory:new(directory,name,parent)
     self.ID = directory
     self.name = name
     self.parent = parent
+    self.hasScannedDirectory = false
     self.childrenIndex = {}
     self.songIndex = {}
     self.selectedIndex = 1
@@ -630,20 +653,27 @@ local function fast_read_byte_array(path)
     return future:getValue()--[[@as string]]
 end
 
-local function getMidiData(directory)
+function midiPlayer.getMidiData(directory)
+    directory.songIndex = {}
+    directory.childrenIndex = {}
+    directory.hasScannedDirectory = true
     for k,fileName in pairs(file:list(directory.ID)) do
         local path = directory.ID.."/"..fileName
         local suffix = string.sub(fileName,-4,-1)
         local name = string.sub(fileName,1,-5)
-        
-        if not path:find("%.[^.]-$") then
-            midiPlayer.directories[path] = midiPlayer.directory:new(path,fileName,directory)
-            table.insert(directory.childrenIndex,midiPlayer.directories[path])
-            getMidiData(midiPlayer.directories[path])
-        end
-        if suffix == ".mid" and (not midiPlayer.songs[name]) then
-            midiPlayer.songs[name] = midiPlayer.song:new(name,path)
-            table.insert(directory.songIndex,name)
+        if string.sub(name,1,1) ~= "." then
+            if not path:find("%.[^.]-$") then
+                midiPlayer.directories[path] = midiPlayer.directory:new(path,fileName,directory)
+                table.insert(directory.childrenIndex,midiPlayer.directories[path])
+            end
+            if suffix == ".mid" then
+                if not midiPlayer.songs[name] then
+                    midiPlayer.songs[name] = midiPlayer.song:new(name,path)
+                    table.insert(directory.songIndex,name)
+                else
+                    table.insert(directory.songIndex,name)
+                end
+            end
         end
     end
 end
@@ -653,7 +683,7 @@ if not playerConfig.directory:find("%.[^.]-$") then
 end
 
 midiPlayer.directories[playerConfig.directory] = midiPlayer.directory:new(playerConfig.directory,playerConfig.directory)
-getMidiData(midiPlayer.directories[playerConfig.directory])
+midiPlayer.getMidiData(midiPlayer.directories[playerConfig.directory])
 generateSongSelector()
 
 --#ENDREGION
@@ -879,7 +909,11 @@ function events.MOUSE_PRESS(key,state)
             local selectedSongPinged = midiPlayer.instance.songs[directory.songIndex[songIndex]]
             if key == 0 then
                 if directory.selectedIndex <= #directory.childrenIndex then
-                    midiPlayer.currentDirectory = directory.childrenIndex[directory.selectedIndex].ID
+                    local childDirectory = directory.childrenIndex[directory.selectedIndex]
+                    if not childDirectory.hasScannedDirectory then
+                        midiPlayer.getMidiData(midiPlayer.directories[childDirectory.ID])
+                    end
+                    midiPlayer.currentDirectory = childDirectory.ID
                 else
                     if not selectedSongLocal then return end
                     local localMode = midiPlayer.localMode
@@ -954,6 +988,9 @@ function events.MOUSE_PRESS(key,state)
                     end
                 elseif midiPlayer.isModPressed then
                     if directory.parent then
+                        if not directory.parent.hasScannedDirectory then
+                            midiPlayer.getMidiData(midiPlayer.directories[directory.parent.ID])
+                        end
                         midiPlayer.currentDirectory = directory.parent.ID
                     end
                 else
