@@ -266,9 +266,7 @@ function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
 
     self.sound = sounds[soundID]
     local pitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
-    self.sound:pos(instance.target:getPos()):volume(self.velocity * channel.volume):pitch(pitch):loop(not hasMain):subtitle("MIDI song plays"):play()
-    
-    --sounds:playSound(soundID,instance.target:getPos(),self.velocity,soundPitch,not hasMain):setSubtitle("MIDI song plays")
+    self.sound:pos(instance.target:getPos()):volume(self.velocity * channel.volume * instance.volume):pitch(pitch):loop(not hasMain):subtitle("MIDI song plays"):play()
     return self
 end
 
@@ -285,14 +283,11 @@ function midi.note:sustain()
     
     local soundID = template.."Sustain."..soundSample
     local channel = self.instance.channels[self.channel]
-    --local soundPitch = self.instrument.Sustain[tostring(self.pitch)].pitch
     if self.instrument.Main then
         self.sound:stop()
         self.loopSound = sounds[soundID]
         local pitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
-        self.loopSound:pos(self.instance.target:getPos()):volume(self.velocity * channel.volume):pitch(pitch):loop(true):subtitle("MIDI song plays"):play()
-        
-        --sounds:playSound(soundID,self.instance.target:getPos(),self.velocity,soundPitch,true):setSubtitle("MIDI song plays")
+        self.loopSound:pos(self.instance.target:getPos()):volume(self.velocity * channel.volume * self.instance.volume):pitch(pitch):loop(true):subtitle("MIDI song plays"):play()
     else
         self.loopSound = self.sound
     end

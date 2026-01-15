@@ -10,6 +10,7 @@ function instance:new(ID,target)
     self.ID = ID
     self.activeSong = nil
     self.target = target
+    self.volume = 1
     self.midi = midi
     self.lastSysTime = client.getSystemTime()
     self.lastUpdated = client.getSystemTime()
@@ -34,10 +35,20 @@ end
 
 function instance:setTarget(target)
     self.target = target
+    return self
 end
 
 function instance:getTarget()
     return self.target
+end
+
+function instance:setVolume(volume)
+    self.volume = math.clamp(volume,0,1)
+    return self
+end
+
+function instance:getVolume()
+    return self.volume
 end
 
 function instance:getPermissionLevel()

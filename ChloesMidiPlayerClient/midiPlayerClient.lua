@@ -22,6 +22,7 @@ local midiPlayer = {
     songTree = {},
     pingQueue = {},
     pageSize = 20,
+    volume = 1,
     pingSize = 450,
     limitRoleback = 5,
     localMode = false,
@@ -96,10 +97,13 @@ display:setText("")
     :setBackground(true)
     :setAlignment("CENTER")
     :setScale(0.25)
-    :setPos(0,4,0)
+    :setPos(0,6,0)
     :setBackgroundColor(0,0,0,1)
 
+local clientEntity = client:getViewer()
+local lastItemSlot = clientEntity:getNbt().SelectedItemSlot
 function events.tick()
+    local currentItemSlot = clientEntity:getNbt().SelectedItemSlot
     local songName = midiPlayer.activeSong
     if songName and string.len(songName) > 40 then
         songName = string.sub(songName,0,40) .. "..."
@@ -110,8 +114,27 @@ function events.tick()
             local playingType = "§d"
             if host:isHost() then
                 if midiPlayer.songs[midiPlayer.activeSong].state == "LOCAL_PROCESSED" then
-                    playingType = "§e"
+                    playingType = "§b"
                 end
+            end
+            local volumeDisplay = ""
+            local playerID = player:getUUID()
+            local targetEntity = clientEntity:getTargetedEntity(15)
+            if clientEntity:isCrouching() and targetEntity and targetEntity:getUUID() == playerID then
+                local scrollAmount = currentItemSlot - lastItemSlot
+                scrollAmount = ((scrollAmount - 4) % 9) - 5
+                midiPlayer.instance.volume = math.clamp(midiPlayer.instance.volume + (scrollAmount/10),0,1)
+
+                local volumeBar = ""
+                local playProgress = math.ceil((midiPlayer.instance.volume * 10)) + 1
+                for i = 1, 10 do
+                    if i >= playProgress then 
+                        volumeBar = volumeBar .. "§7█"
+                    else
+                        volumeBar = volumeBar .. "§a█"
+                    end
+                end
+                volumeDisplay = "\n§avolume: - " .. volumeBar .. " §a+"
             end
             local playing
             if song.state == "PLAYING" then
@@ -133,7 +156,7 @@ function events.tick()
                     playBar = playBar .. playingType .. "█"
                 end
             end
-            local text = songName .. playing .. msToTimeString(song.time) .. "/" .. msToTimeString(song.length) .. "] " .. playBar
+            local text = songName .. playing .. msToTimeString(song.time) .. "/" .. msToTimeString(song.length) .. "] " .. playBar .. volumeDisplay
             display:setText(text)
                 :setVisible(true)
         elseif midiPlayer.activeSong then
@@ -160,6 +183,7 @@ function events.tick()
                 :setVisible(false)
         end
     end
+    lastItemSlot = currentItemSlot
 end
 --#ENDREGION
 --#REGION decompress midi
@@ -312,6 +336,10 @@ end
 --#REGION setup
 if not host:isHost() then return end
 config:setName("chloesMidiPlayer")
+local volume = config:load("volume")
+if volume then
+    midiPlayer.volume = volume
+end
 local pingSize = config:load("pingSize")
 if pingSize then
     midiPlayer.pingSize = pingSize
@@ -348,7 +376,7 @@ local pivotOffset = vec(-4,-3.5,0)
 emojiHeadParent:setPos(pivotOffset)
 emojiHead:setPos(-pivotOffset)
 local function getEmojiHead(emoji,rot)
-    return world.newItem([=[minecraft:player_head{display:{Name:'{"text":"]=].."emoji_"..rot.."_"..emoji..[=["}'},SkullOwner:{Id:[I;]=]..playerID[1]..","..playerID[2]..","..playerID[3]..","..playerID[4]..[=[]}}]=])
+    return world.newItem([=[minecraft:player_head{display:{Name:'{"text":"]=].."emoji,"..rot..","..emoji..[=["}'},SkullOwner:{Id:[I;]=]..playerID[1]..","..playerID[2]..","..playerID[3]..","..playerID[4]..[=[]}}]=])
 end
 
 function events.skull_render(delta,blockstate,itemstack,entity,string)
@@ -464,7 +492,7 @@ local function generateSongSelector()
             if localState == "GLOBAL" then
                 colour = "§d"
             elseif localState == "LOCAL_PROCESSED" then
-                colour = "§e"
+                colour = "§b"
             end
             local stateIndicator = uploadStateLookup[uploadState](name)
             if playStateLookup[playState] then
@@ -534,6 +562,33 @@ actions.settingsBack = midiPlayer.settings:newAction()
             :setColor(vectors.hexToRGB("3A3A3A"))
             :setHoverColor(vectors.hexToRGB("4E4E4E"))
     end)
+
+actions.volume = midiPlayer.settings:newAction()
+    :setTitle("volume \n" .. tostring(midiPlayer.volume * 100))
+    :setItem(getEmojiHead("volume_2","000"))
+    :setColor(vectors.hexToRGB("1B3044"))
+    :setHoverColor(vectors.hexToRGB("1B3044"))
+    :setOnScroll(function(scroll) 
+        local scrollMod = 1
+        if midiPlayer.isAltPressed then
+            scrollMod = 10
+        end
+        midiPlayer.volume = math.clamp(math.floor(midiPlayer.volume * 100)/100 + (scroll * 0.1 * scrollMod),0,1)
+        config:save("volume",midiPlayer.volume)
+        midiPlayer.instance.volume = midiPlayer.volume
+        actions.volume:setTitle("volume \n" .. math.floor(midiPlayer.volume * 100))
+        if midiPlayer.volume == 0 then
+            actions.volume:setItem(getEmojiHead("volume_0","000"))
+        else
+            actions.volume:setItem(getEmojiHead("volume_2","000"))
+        end
+    end)
+if midiPlayer.volume == 0 then
+    actions.volume:setItem(getEmojiHead("volume_0","000"))
+else
+    actions.volume:setItem(getEmojiHead("volume_2","000"))
+end  
+
 
 actions.pingSize = midiPlayer.settings:newAction()
     :setTitle("ping size \n" .. tostring(midiPlayer.pingSize) .. " b/s")

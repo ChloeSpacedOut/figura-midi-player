@@ -5,7 +5,6 @@
 - importing song stored in avatar
 - song info page (length, compression ratio, etc)
 - find the buffers that aren't closing
-- Crouch interactive volume slider with scroll
 - Set parse speed
 - check if notes playing on top of themselves should cancle out the previous note. If not, give notes a random ID, and have an index of all the notes to random IDs
 - move midi parser to insance, kill all parse projects if instance stops existing (this is the buffer leak issue)
@@ -13,6 +12,7 @@
 - use just pos as target instead of a task
 - check killing instance kills notes
 - consider case where player exits render distance then comes back
+- midi player height offset
  ]]
 local instance
 
