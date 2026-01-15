@@ -1,22 +1,18 @@
 -- todo
 --[[ 
 - add song getTime (in quater notes)
-- add channel volume
-- channel pitch
 - set ping limit being bellow size of name bytes + ping name bytes must be considered
 - importing song stored in avatar
 - song info page (length, compression ratio, etc)
-- check for playing song when song isn't pinged, or parsing song when song is incomplete
 - find the buffers that aren't closing
-- fix note sounds remaining after a song ends and a new song is played
 - Crouch interactive volume slider with scroll
-- Return if player is trusted
 - Set parse speed
 - check if notes playing on top of themselves should cancle out the previous note. If not, give notes a random ID, and have an index of all the notes to random IDs
 - move midi parser to insance, kill all parse projects if instance stops existing (this is the buffer leak issue)
-- lower pitch notes should sustain for longer than they currently do (listen to hall of the mountain king)
 - function to just get all the sounds in the midi player cloud
 - use just pos as target instead of a task
+- check killing instance kills notes
+- consider case where player exits render distance then comes back
  ]]
 local instance
 

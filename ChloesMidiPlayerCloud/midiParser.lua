@@ -131,7 +131,7 @@ midiParser.metaEvents = {
         table.insert(currentTrack.sequence,{
             type = "smtpeOffset",
             deltaTime = deltaTime,
-            hours = buffer:readShort(),
+            hours = buffer:read(),
             minutes = buffer:read(),
             seconds = buffer:read(),
             frames = buffer:read(),
@@ -226,12 +226,20 @@ midiParser.voiceMessages = {
         })
     end,
     [0xE] = function(buffer,currentTrack,deltaTime,channel)
+        local leastSignificantByte = readBits(buffer,1)
+        local mostSignificantByte = readBits(buffer,1)
+        local pitchBend = {}
+        for  i = 1,7 do
+            pitchBend[i] = leastSignificantByte[i]
+        end
+        for  i = 1,7 do
+            pitchBend[i + 7] = mostSignificantByte[i]
+        end
         table.insert(currentTrack.sequence,{
             type = "pitchBend",
             deltaTime = deltaTime,
             channel = channel,
-            leastSignificantByte = bitsToNum(readBits(buffer,1),0,6),
-            mostSignificantByte = bitsToNum(readBits(buffer,1),0,6)
+            pitchBend = bitsToNum(pitchBend,0,13)
         })
     end
 }

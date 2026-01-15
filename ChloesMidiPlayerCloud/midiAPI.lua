@@ -190,6 +190,15 @@ function midi.channel:new(instance,ID)
     self.ID = ID
     self.instance = instance
     self.instrument = 0
+    self.pitchBend = 8192
+    self.rpnData = {
+        paramMSB = nil,
+        paramLSB = nil,
+        valMSB = nil,
+        valLSB = nil
+    }
+    self.pitchBendRange = 2
+    self.volume = 1
     return self
 end
 
@@ -206,18 +215,18 @@ function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
     self.channel = currentChannel
     self.track = track
     self.initTime = sysTime
-    local channelObject = instance.channels[currentChannel]
-    if not channelObject then
-        channelObject = midi.channel:new(instance,currentChannel)
-        instance.channels[currentChannel] = channelObject
+    local channel = instance.channels[currentChannel]
+    if not channel then
+        channel = midi.channel:new(instance,currentChannel)
+        instance.channels[currentChannel] = channel
     end
     if currentChannel ~= 9 then
-        self.instrument = soundfont.soundTree[channelObject.instrument + 1]
+        self.instrument = soundfont.soundTree[channel.instrument + 1]
     else
         self.instrument = soundfont.soundTree[129]
     end
     if not self.instrument then
-        local redundancy = soundfont.redundancyMappings[channelObject.instrument + 1]
+        local redundancy = soundfont.redundancyMappings[channel.instrument + 1]
         if redundancy then
             self.instrument = soundfont.soundTree[redundancy]
         else
@@ -256,7 +265,8 @@ function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
     self.duration = soundfont.soundDuration[soundID]
 
     self.sound = sounds[soundID]
-    self.sound:pos(instance.target:getPos()):volume(self.velocity):pitch(soundPitch):loop(not hasMain):subtitle("MIDI song plays"):play()
+    local pitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
+    self.sound:pos(instance.target:getPos()):volume(self.velocity * channel.volume):pitch(pitch):loop(not hasMain):subtitle("MIDI song plays"):play()
     
     --sounds:playSound(soundID,instance.target:getPos(),self.velocity,soundPitch,not hasMain):setSubtitle("MIDI song plays")
     return self
@@ -274,11 +284,13 @@ function midi.note:sustain()
     local soundSample = self.instrument.Sustain[tostring(self.pitch)].sample
     
     local soundID = template.."Sustain."..soundSample
-    local soundPitch = self.instrument.Sustain[tostring(self.pitch)].pitch
+    local channel = self.instance.channels[self.channel]
+    --local soundPitch = self.instrument.Sustain[tostring(self.pitch)].pitch
     if self.instrument.Main then
         self.sound:stop()
         self.loopSound = sounds[soundID]
-        self.loopSound:pos(self.instance.target:getPos()):volume(self.velocity):pitch(soundPitch):loop(true):subtitle("MIDI song plays"):play()
+        local pitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
+        self.loopSound:pos(self.instance.target:getPos()):volume(self.velocity * channel.volume):pitch(pitch):loop(true):subtitle("MIDI song plays"):play()
         
         --sounds:playSound(soundID,self.instance.target:getPos(),self.velocity,soundPitch,true):setSubtitle("MIDI song plays")
     else
@@ -335,6 +347,37 @@ midi.events = {
             instance.channels[eventData.channel] = midi.channel:new(instance,eventData.channel)
         end
         instance.channels[eventData.channel].instrument = eventData.newProgramNumber
+    end,
+    controllerChange = function(instance,eventData,sysTime,activeTrack,trackID,activeSong)
+        if not instance.channels[eventData.channel] then
+            instance.channels[eventData.channel] = midi.channel:new(instance,eventData.channel)
+        end
+        local channel = instance.channels[eventData.channel]
+        -- Registered Parameter Number handler
+        if (eventData.controllerNumber == 0x64 or eventData.controllerNumber == 0x65) and (channel.rpnData.valMSB or channel.rpnData.valLSB) then
+            channel.rpnData = {}
+        end
+        if eventData.controllerNumber == 0x65 then
+            channel.rpnData.paramMSB = eventData.controllerValue
+        elseif eventData.controllerNumber == 0x64 then
+            channel.rpnData.paramLSB = eventData.controllerValue
+        elseif eventData.controllerNumber == 0x6 then
+            channel.rpnData.valMSB = eventData.controllerValue
+            if channel.rpnData.paramMSB == 0 and channel.rpnData.paramLSB == 0 then
+                channel.pitchBendRange = eventData.controllerValue
+            end
+        end
+
+        -- Channel Volume Control
+        if eventData.controllerNumber == 0x7 then
+            channel.volume = eventData.controllerValue/100
+        end
+    end,
+    pitchBend = function(instance,eventData,sysTime,activeTrack,trackID,activeSong)
+        if not instance.channels[eventData.channel] then
+            instance.channels[eventData.channel] = midi.channel:new(instance,eventData.channel)
+        end
+        instance.channels[eventData.channel].pitchBend = eventData.pitchBend
     end
 }
 

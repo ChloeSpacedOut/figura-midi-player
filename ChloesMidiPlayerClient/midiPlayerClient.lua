@@ -26,8 +26,9 @@ local midiPlayer = {
     limitRoleback = 5,
     localMode = false,
     activeSong = nil,
-    isAltModPressed = false,
-    isModPressed = false
+    isCtrlPressed = false,
+    isShiftPressed = false,
+    isAltPressed = false
 }
 --#ENDREGION
 --#REGION utils
@@ -515,9 +516,9 @@ actions.songs = midiPlayer.page:newAction()
     :setOnScroll(function(scroll)
         local directory = midiPlayer.directories[midiPlayer.currentDirectory]
         local scrollMod = 1
---[[         if midiPlayer.isAltModPressed then
+        if midiPlayer.isAltPressed then
             scrollMod = midiPlayer.pageSize
-        end ]]
+        end
         directory.selectedIndex = math.clamp(directory.selectedIndex - scroll * scrollMod,1,#directory.childrenIndex + #directory.songIndex )
         generateSongSelector()
     end)
@@ -540,7 +541,11 @@ actions.pingSize = midiPlayer.settings:newAction()
     :setColor(vectors.hexToRGB("1B4429"))
     :setHoverColor(vectors.hexToRGB("1B4429"))
     :setOnScroll(function(scroll) 
-        midiPlayer.pingSize = math.max(0,midiPlayer.pingSize + (scroll * 5))
+        local scrollMod = 1
+        if midiPlayer.isAltPressed then
+            scrollMod = 10
+        end
+        midiPlayer.pingSize = math.max(0,midiPlayer.pingSize + (scroll * 5 * scrollMod))
         config:save("pingSize",midiPlayer.pingSize)
         actions.pingSize:setTitle("ping size \n" .. tostring(midiPlayer.pingSize) .. " b/s")
     end)
@@ -551,7 +556,11 @@ actions.limitRoleback = midiPlayer.settings:newAction()
     :setColor(vectors.hexToRGB("441B1B"))
     :setHoverColor(vectors.hexToRGB("441B1B"))
     :setOnScroll(function(scroll) 
-        midiPlayer.limitRoleback = math.max(0,midiPlayer.limitRoleback + (scroll))
+        local scrollMod = 1
+        if midiPlayer.isAltPressed then
+            scrollMod = 10
+        end
+        midiPlayer.limitRoleback = math.max(0,midiPlayer.limitRoleback + (scroll * scrollMod))
         config:save("limitRoleback",midiPlayer.limitRoleback)
         actions.limitRoleback:setTitle("ratelimit roleback \n" .. tostring(midiPlayer.limitRoleback) .. " pings")
     end)
@@ -917,7 +926,7 @@ function events.MOUSE_PRESS(key,state)
                 else
                     if not selectedSongLocal then return end
                     local localMode = midiPlayer.localMode
-                    if midiPlayer.isAltModPressed then
+                    if midiPlayer.isCtrlPressed then
                         localMode = not localMode
                     end
                     if localMode then
@@ -963,7 +972,7 @@ function events.MOUSE_PRESS(key,state)
                     end
                 end
             elseif key == 1 then
-                if midiPlayer.isAltModPressed and (directory.selectedIndex > #directory.childrenIndex) then
+                if midiPlayer.isCtrlPressed and (directory.selectedIndex > #directory.childrenIndex) then
                     if not selectedSongLocal then return end
                     local songID = directory.songIndex[songIndex]
                     if midiPlayer.compressProjects[songID] then
@@ -986,7 +995,7 @@ function events.MOUSE_PRESS(key,state)
                     if midiPlayer.activeSong == songID then
                         midiPlayer.activeSong = nil
                     end
-                elseif midiPlayer.isModPressed then
+                elseif midiPlayer.isShiftPressed then
                     if directory.parent then
                         if not directory.parent.hasScannedDirectory then
                             midiPlayer.getMidiData(midiPlayer.directories[directory.parent.ID])
@@ -1018,20 +1027,27 @@ function events.KEY_PRESS(key,state)
     local actionWheelOpen = action_wheel:isEnabled()
     local currentPage = action_wheel:getCurrentPage():getTitle()
     local selectedAction = action_wheel:getSelected()
-    if actionWheelOpen and currentPage == "midiPlayerPage" and selectedAction == 3 then
+    if actionWheelOpen and (currentPage == "midiPlayerPage" or currentPage == "midiPlayerSettings") then
         if key == 340 then
             if state == 1 or state == 2 then
-                midiPlayer.isModPressed = true
+                midiPlayer.isShiftPressed = true
                 return true
             elseif state == 0 then
-                midiPlayer.isModPressed = false
+                midiPlayer.isShiftPressed = false
             end
         elseif key == 341 then
             if state == 1 or state == 2 then
-                midiPlayer.isAltModPressed = true
+                midiPlayer.isCtrlPressed = true
                 return true
             elseif state == 0 then
-                midiPlayer.isAltModPressed = false
+                midiPlayer.isCtrlPressed = false
+            end
+        elseif key == 342 then
+            if state == 1 or state == 2 then
+                midiPlayer.isAltPressed = true
+                return true
+            elseif state == 0 then
+                midiPlayer.isAltPressed = false
             end
         end
     end

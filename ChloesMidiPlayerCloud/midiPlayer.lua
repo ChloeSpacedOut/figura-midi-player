@@ -57,16 +57,20 @@ end
 
 local function updateNotes(instance,sysTime)
     local targetPos = instance.target:getPos()
-    for _,channel in pairs(instance.tracks) do
-        for _,note in pairs(channel) do
+    for _,track in pairs(instance.tracks) do
+        for _,note in pairs(track) do
             if not instance.target.getPos then
                 return
             end
+            local channel = note.instance.channels[note.channel]
+            local pitch = note.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
             if note.sound then
                 note.sound:pos(targetPos)
+                    :pitch(pitch)
             end
             if note.loopSound then
                 note.loopSound:pos(targetPos)
+                    :pitch(pitch)
             end
             local instrument = soundfont.instruments[note.instrument.index]
             local noteVol = 1
@@ -77,23 +81,23 @@ local function updateNotes(instance,sysTime)
             end
             if instrument.sustain ~= 0 then
                 noteVol = math.clamp(instrument.sustain^(((sysTime - note.initTime)/100)*pitchMod),instrument.minVol,1)
-                if (note.initTime + math.floor((note.duration * (1/note.soundPitch)) - 7) <= sysTime) and (not note.loopSound) then
+                if (note.initTime + math.floor((note.duration * (1/pitch)) - 7) <= sysTime) and (not note.loopSound) then
                     note:sustain()
                 end
                 if note.state == "RELEASED" then
                     if instrument.resonance ~= 0 then
                         if note.loopSound then
-                            note.loopSound:volume(noteVol * resonanceMod * note.velocity)
+                            note.loopSound:volume(noteVol * resonanceMod * note.velocity * channel.volume)
                         elseif note.sound then
-                            note.sound:volume(noteVol * resonanceMod * note.velocity)
+                            note.sound:volume(noteVol * resonanceMod * note.velocity * channel.volume)
                         end
                     else
                         note:stop()
                     end
                 elseif note.state == "SUSTAINING" then
-                    note.loopSound:volume(noteVol * note.velocity)
+                    note.loopSound:volume(noteVol * note.velocity * channel.volume)
                 elseif note.state == "PLAYING" then
-                    note.sound:volume(noteVol * note.velocity) -- idk if this accounts for loop only samples
+                    note.sound:volume(noteVol * note.velocity * channel.volume)
                 end
             end
             if instrument.resonance ~= 0 and note.state == "RELEASED" then
