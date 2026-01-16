@@ -59,12 +59,17 @@ local function progressMidi(instance,activeSong,sysTime,deltaTime)
 end
 
 local function updateNotes(instance,sysTime)
-    local targetPos = instance.target:getPos()
+    local targetPos
+    if type(instance.target) == "Vector3" then
+        targetPos = instance.target
+    else
+        if not instance.target.getPos then
+            return
+        end
+        targetPos = instance.target:getPos()
+    end
     for _,track in pairs(instance.tracks) do
         for _,note in pairs(track) do
-            if not instance.target.getPos then
-                return
-            end
             local channel = note.instance.channels[note.channel]
             local pitch = note.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
             if note.sound then

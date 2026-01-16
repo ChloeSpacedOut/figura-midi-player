@@ -1,6 +1,11 @@
+-- midi player cloud by chloespacedout
+-- version 1.0
+
 local midiPlayer = require("midiPlayer")
 local midiParser = require("midiParser")
 local midi = require("midiAPI")
+
+nameplate.ALL:setText("Midi Player Cloud")
 
 local instance = {}
 instance.__index = instance
@@ -9,6 +14,7 @@ function instance:new(ID,target)
     self = setmetatable({},instance)
     self.ID = ID
     self.activeSong = nil
+    self.isRemoved = false
     self.target = target
     self.volume = 1
     self.midi = midi
@@ -24,6 +30,7 @@ function instance:remove()
     if self.activeSong then
         self.songs[self.activeSong]:remove()
     end
+    self.isRemoved = true
     midiPlayer.instances[self.ID] = nil
 end
 
@@ -53,6 +60,14 @@ end
 
 function instance:getPermissionLevel()
     return avatar:getPermissionLevel()
+end
+
+function instance:listSounds()
+    return sounds:getCustomSounds()
+end
+
+function instance:getSound(id)
+    return sounds[id]
 end
 
 function instance:updatePlayer()

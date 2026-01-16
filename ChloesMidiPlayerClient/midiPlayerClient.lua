@@ -1,3 +1,6 @@
+-- midi player client by chloespacedout
+-- version 1.0
+
 --#REGION global
 --#REGION setup
 local playerID = {}
@@ -48,6 +51,13 @@ local function msToTimeString(val)
 
     return minutes .. ":" .. seconds
 end
+
+function midiPlayer:setDisplayPos(val)
+    midiPlayer.heightOffset = val
+    midiPlayer.displayParent:setPos(val)
+    return self
+end
+
 --#ENDREGION
 --#REGION midi player cloud setup
 midiPlayer.avatarID[1],midiPlayer.avatarID[2],midiPlayer.avatarID[3],midiPlayer.avatarID[4] = client.uuidToIntArray(playerConfig.midiAvatar)
@@ -83,16 +93,16 @@ function events.tick()
             if host:isHost() then
                 actions.midiPlayer:setTitle("Midi Player")
                     :setOnLeftClick(function() action_wheel:setPage(midiPlayer.page) end)
-                    :setItem(midiPlayer.getEmojiHead("cassette","000"))
+                    :setItem("jukebox")
             end
         end
     end
 end
 --#ENDREGION
 --#REGION song display
-local displayParent = models:newPart("midiPlayerDisplay")
-local displayCamera = displayParent:newPart("displayCamera","CAMERA")
-displayParent:setPos(0,45,0)
+midiPlayer.displayParent = models:newPart("midiPlayerDisplay")
+local displayCamera = midiPlayer.displayParent:newPart("displayCamera","CAMERA")
+midiPlayer.displayParent:setPos(0,45,0)
 local display = displayCamera:newText("songDisplay")
 display:setText("")
     :setBackground(true)
@@ -111,6 +121,10 @@ function events.tick()
     end
     if midiPlayer.instance then
         if (midiPlayer.instance.activeSong and midiPlayer.instance.songs[midiPlayer.activeSong]) or midiPlayer.instance.songs[midiPlayer.activeSong] then
+            if midiPlayer.instance.isRemoved then
+                midiPlayer.instance = nil
+                return
+            end
             if host:isHost() then
                 midiPlayer.instance.volume = midiPlayer.volume
             end
@@ -165,11 +179,15 @@ function events.tick()
                 :setVisible(true)
         elseif midiPlayer.activeSong then
             if midiPlayer.instance:getPermissionLevel() ~= "MAX" then
-                local text = songName .. "\n§b:music2: playing ▶" .. "\n§cMidi player avatar not set to MAX perm so could not play\nSet 'Midi Player Cloud' to MAX in 'disconnected avatars'"
+                local text = songName .. "\n§d:music2: playing ▶" .. "\n§cMidi player avatar not set to MAX perm so could not play\nSet 'Midi Player Cloud' to MAX in 'disconnected avatars'"
+                display:setText(text)
+                    :setVisible(true)
+            elseif avatar:getPermissionLevel() ~= "MAX" then
+                local text = songName .. "\n§d:music2: playing ▶" .. "\n§cAvatar not set to MAX perm so could not play"
                 display:setText(text)
                     :setVisible(true)
             else
-                local text = songName .. "\n§b:music2: playing ▶" .. "\n§cSong not received on client so could not play"
+                local text = songName .. "\n§d:music2: playing ▶" .. "\n§cSong not received on client so could not play"
                 display:setText(text)
                     :setVisible(true)
             end
@@ -179,7 +197,7 @@ function events.tick()
         end
     else
         if midiPlayer.activeSong then
-            local text = songName .. "\n§b:music2: playing ▶" .. "\n§cMidi player avatar not loaded so song could not play\nSet 'Midi Player Cloud' to MAX in 'disconnected avatars'"
+            local text = songName .. "\n§d:music2: playing ▶" .. "\n§cMidi player avatar not loaded so song could not play\nSet 'Midi Player Cloud' to MAX in 'disconnected avatars'"
             display:setText(text)
                 :setVisible(true)
         else
@@ -298,6 +316,7 @@ end
 --#ENDREGION
 --#REGION pings
 function pings.sendSong(ID,currentChunk,isLastChunk,data)
+    if avatar:getPermissionLevel() ~= "MAX" then return end
     if not midiPlayer.instance then return end
     if midiPlayer.instance:getPermissionLevel() ~= "MAX" then return end
     if (not midiPlayer.instance.songs[ID]) or (not midiPlayer.instance.songs[ID].songChunks) then
@@ -318,17 +337,17 @@ end
 
 function pings.updateSong(ID,action)
     if action == 1 then
-        if midiPlayer.instance and midiPlayer.instance:getPermissionLevel() == "MAX" and midiPlayer.instance.songs[ID] then
+        if avatar:getPermissionLevel() == "MAX" and midiPlayer.instance and midiPlayer.instance:getPermissionLevel() == "MAX" and midiPlayer.instance.songs[ID] then
             midiPlayer.instance.songs[ID]:play()
         end
         midiPlayer.activeSong = ID
     elseif action == 2 then
-        if midiPlayer.instance and midiPlayer.instance:getPermissionLevel() == "MAX" and midiPlayer.instance.songs[ID] then
+        if avatar:getPermissionLevel() == "MAX" and midiPlayer.instance and midiPlayer.instance:getPermissionLevel() == "MAX" and midiPlayer.instance.songs[ID] then
             midiPlayer.instance.songs[ID]:pause()
         end
         midiPlayer.activeSong = ID
     elseif action == 0 then
-        if midiPlayer.instance and midiPlayer.instance:getPermissionLevel() == "MAX" and midiPlayer.instance.songs[ID] then
+        if avatar:getPermissionLevel() == "MAX" and midiPlayer.instance and midiPlayer.instance:getPermissionLevel() == "MAX" and midiPlayer.instance.songs[ID] then
             midiPlayer.instance.songs[ID]:stop()
         end
         midiPlayer.activeSong = nil

@@ -271,6 +271,7 @@ function midiParser.project:new(midiSong,speed,shouldQueueSong)
     self.shouldQueueSong = shouldQueueSong
     self.midiData = midiSong.rawSong
     self.song = midiSong
+    self.song.parseProject = self
     self.buffer = data:createBuffer()
     self.buffer:writeByteArray(self.midiData)
     self.buffer:setPosition(0)
@@ -291,6 +292,7 @@ end
 
 function midiParser.project:remove()
     self.buffer:close()
+    self.song.parseProject = nil
     midiParser.projects[self.ID] = nil
 end
 

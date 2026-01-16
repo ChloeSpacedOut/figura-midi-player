@@ -21,6 +21,7 @@ function midi.song:new(instnace,ID,rawData)
     self.instance = instnace
     self.tracks = {}
     self.bakedQuarterNotes = {}
+    self.parseProject = nil
     self.state = "STOPPED"
     self.loopState = false
     self.loaded = false
@@ -174,6 +175,9 @@ function midi.song:load(speed)
 end
 
 function midi.song:remove()
+    if self.parseProject then   
+        self.parseProject:remove()
+    end
     self.instance.songs[self.ID]:stop()
     self.instance.songs[self.ID] = nil
     -- add removing parser projects here
@@ -258,19 +262,21 @@ function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
         soundfont.soundDuration[soundID] = utils.getOggDuration(soundID)
     end
 
-    if not instance.target then
-        return self
-    end
-
-    if not instance.target.getPos then
-        return self
+    local targetPos
+    if type(instance.target) == "Vector3" then
+        targetPos = instance.target
+    else
+        if not instance.target.getPos then
+            return
+        end
+        targetPos = instance.target:getPos()
     end
 
     self.duration = soundfont.soundDuration[soundID]
 
     self.sound = sounds[soundID]
     local pitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
-    self.sound:pos(instance.target:getPos()):volume(self.velocity * channel.volume * instance.volume):pitch(pitch):loop(not hasMain):subtitle("MIDI song plays"):play()
+    self.sound:pos(targetPos):volume(self.velocity * channel.volume * instance.volume):pitch(pitch):loop(not hasMain):subtitle("MIDI song plays"):play()
     return self
 end
 
@@ -284,6 +290,16 @@ function midi.note:sustain()
     end
     local template = self.instrument.template
     local soundSample = self.instrument.Sustain[tostring(self.pitch)].sample
+
+    local targetPos
+    if type(self.instance.target) == "Vector3" then
+        targetPos = self.instance.target
+    else
+        if not self.instance.target.getPos then
+            return
+        end
+        targetPos = self.instance.target:getPos()
+    end
     
     local soundID = template.."Sustain."..soundSample
     local channel = self.instance.channels[self.channel]
@@ -291,7 +307,7 @@ function midi.note:sustain()
         self.sound:stop()
         self.loopSound = sounds[soundID]
         local pitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
-        self.loopSound:pos(self.instance.target:getPos()):volume(self.velocity * channel.volume * self.instance.volume):pitch(pitch):loop(true):subtitle("MIDI song plays"):play()
+        self.loopSound:pos(targetPos):volume(self.velocity * channel.volume * self.instance.volume):pitch(pitch):loop(true):subtitle("MIDI song plays"):play()
     else
         self.loopSound = self.sound
     end
