@@ -22,7 +22,7 @@ local midiPlayer = {
     songTree = {},
     pingQueue = {},
     pageSize = 20,
-    volume = 1,
+    volume = 0.5,
     pingSize = 450,
     limitRoleback = 5,
     localMode = false,
@@ -79,10 +79,11 @@ function events.tick()
             local player = world.getEntity(avatar:getUUID())
             midiPlayer.instance = midiPlayer.midiAPI.newInstance(player:getName(),player)
             midiPlayer.hasMadeInstance = true
+            midiPlayer.instance.volume = midiPlayer.volume
             if host:isHost() then
                 actions.midiPlayer:setTitle("Midi Player")
                     :setOnLeftClick(function() action_wheel:setPage(midiPlayer.page) end)
-                    :setItem("minecraft:jukebox")
+                    :setItem(midiPlayer.getEmojiHead("cassette","000"))
             end
         end
     end
@@ -110,10 +111,13 @@ function events.tick()
     end
     if midiPlayer.instance then
         if (midiPlayer.instance.activeSong and midiPlayer.instance.songs[midiPlayer.activeSong]) or midiPlayer.instance.songs[midiPlayer.activeSong] then
+            if host:isHost() then
+                midiPlayer.instance.volume = midiPlayer.volume
+            end
             local song = midiPlayer.instance.songs[midiPlayer.activeSong]
             local playingType = "§d"
             if host:isHost() then
-                if midiPlayer.songs[midiPlayer.activeSong].state == "LOCAL_PROCESSED" then
+                if midiPlayer.songs[midiPlayer.activeSong].state == "LOCAL_PROCESSED" or midiPlayer.localMode then
                     playingType = "§b"
                 end
             end
@@ -375,7 +379,7 @@ midiPlayerHead:setScale(1.5)
 local pivotOffset = vec(-4,-3.5,0)
 emojiHeadParent:setPos(pivotOffset)
 emojiHead:setPos(-pivotOffset)
-local function getEmojiHead(emoji,rot)
+function midiPlayer.getEmojiHead(emoji,rot)
     return world.newItem([=[minecraft:player_head{display:{Name:'{"text":"]=].."emoji,"..rot..","..emoji..[=["}'},SkullOwner:{Id:[I;]=]..playerID[1]..","..playerID[2]..","..playerID[3]..","..playerID[4]..[=[]}}]=])
 end
 
@@ -489,9 +493,9 @@ local function generateSongSelector()
             
             local localState = midiPlayer.songs[name].state
             local colour
-            if localState == "GLOBAL" then
+            if localState == "GLOBAL" and (not midiPlayer.localMode) then
                 colour = "§d"
-            elseif localState == "LOCAL_PROCESSED" then
+            elseif localState == "LOCAL_PROCESSED" or midiPlayer.localMode then
                 colour = "§b"
             end
             local stateIndicator = uploadStateLookup[uploadState](name)
@@ -519,7 +523,7 @@ end
 
 actions.back = midiPlayer.page:newAction()
     :setTitle("back")
-    :setItem(getEmojiHead("downvote","090"))
+    :setItem(midiPlayer.getEmojiHead("downvote","090"))
     :setColor(vectors.hexToRGB("CE9119"))
     :setHoverColor(vectors.hexToRGB("FFB727"))
     :setOnLeftClick(function()
@@ -529,7 +533,7 @@ actions.back = midiPlayer.page:newAction()
     end)
 actions.settings = midiPlayer.page:newAction()
     :setTitle("settings")
-    :setItem(getEmojiHead("wrench","000"))
+    :setItem(midiPlayer.getEmojiHead("wrench","000"))
     :setColor(vectors.hexToRGB("3F3F3F"))
     :setHoverColor(vectors.hexToRGB("525252"))
     :setOnLeftClick(function()
@@ -538,7 +542,7 @@ actions.settings = midiPlayer.page:newAction()
 
 actions.songs = midiPlayer.page:newAction()
     :setTitle("songs")
-    :setItem(getEmojiHead("music2","000"))
+    :setItem(midiPlayer.getEmojiHead("music2","000"))
     :setColor(vectors.hexToRGB("371B44"))
     :setHoverColor(vectors.hexToRGB("371B44"))
     :setOnScroll(function(scroll)
@@ -553,46 +557,46 @@ actions.songs = midiPlayer.page:newAction()
 
 actions.settingsBack = midiPlayer.settings:newAction()
     :setTitle("back")
-    :setItem(getEmojiHead("downvote","090"))
+    :setItem(midiPlayer.getEmojiHead("downvote","090"))
     :setColor(vectors.hexToRGB("CE9119"))
     :setHoverColor(vectors.hexToRGB("FFB727"))
     :setOnLeftClick(function()
         action_wheel:setPage(midiPlayer.page)
-        actions.refreshFiles:setItem(getEmojiHead("newspaper","000"))
+        actions.refreshFiles:setItem(midiPlayer.getEmojiHead("newspaper","000"))
             :setColor(vectors.hexToRGB("3A3A3A"))
             :setHoverColor(vectors.hexToRGB("4E4E4E"))
     end)
 
 actions.volume = midiPlayer.settings:newAction()
     :setTitle("volume \n" .. tostring(midiPlayer.volume * 100))
-    :setItem(getEmojiHead("volume_2","000"))
+    :setItem(midiPlayer.getEmojiHead("volume_2","000"))
     :setColor(vectors.hexToRGB("1B3044"))
     :setHoverColor(vectors.hexToRGB("1B3044"))
     :setOnScroll(function(scroll) 
         local scrollMod = 1
         if midiPlayer.isAltPressed then
-            scrollMod = 10
+            scrollMod = 0.1
         end
         midiPlayer.volume = math.clamp(math.floor(midiPlayer.volume * 100)/100 + (scroll * 0.1 * scrollMod),0,1)
         config:save("volume",midiPlayer.volume)
         midiPlayer.instance.volume = midiPlayer.volume
         actions.volume:setTitle("volume \n" .. math.floor(midiPlayer.volume * 100))
         if midiPlayer.volume == 0 then
-            actions.volume:setItem(getEmojiHead("volume_0","000"))
+            actions.volume:setItem(midiPlayer.getEmojiHead("volume_0","000"))
         else
-            actions.volume:setItem(getEmojiHead("volume_2","000"))
+            actions.volume:setItem(midiPlayer.getEmojiHead("volume_2","000"))
         end
     end)
 if midiPlayer.volume == 0 then
-    actions.volume:setItem(getEmojiHead("volume_0","000"))
+    actions.volume:setItem(midiPlayer.getEmojiHead("volume_0","000"))
 else
-    actions.volume:setItem(getEmojiHead("volume_2","000"))
-end  
+    actions.volume:setItem(midiPlayer.getEmojiHead("volume_2","000"))
+end
 
 
 actions.pingSize = midiPlayer.settings:newAction()
     :setTitle("ping size \n" .. tostring(midiPlayer.pingSize) .. " b/s")
-    :setItem(getEmojiHead("ping3","000"))
+    :setItem(midiPlayer.getEmojiHead("ping3","000"))
     :setColor(vectors.hexToRGB("1B4429"))
     :setHoverColor(vectors.hexToRGB("1B4429"))
     :setOnScroll(function(scroll) 
@@ -607,7 +611,7 @@ actions.pingSize = midiPlayer.settings:newAction()
 
 actions.limitRoleback = midiPlayer.settings:newAction()
     :setTitle("ratelimit roleback \n" .. tostring(midiPlayer.limitRoleback) .. " pings")
-    :setItem(getEmojiHead("alarm_clock","000"))
+    :setItem(midiPlayer.getEmojiHead("alarm_clock","000"))
     :setColor(vectors.hexToRGB("441B1B"))
     :setHoverColor(vectors.hexToRGB("441B1B"))
     :setOnScroll(function(scroll) 
@@ -626,10 +630,10 @@ actions.localMode = midiPlayer.settings:newAction()
         midiPlayer.localMode = bool
         config:save("localMode",midiPlayer.localMode)
         if bool then
-            actions.localMode:setItem(getEmojiHead("folder","000"))
+            actions.localMode:setItem(midiPlayer.getEmojiHead("folder","000"))
             actions.localMode:setHoverColor(vectors.hexToRGB("635122"))
         else
-            actions.localMode:setItem(getEmojiHead("globe","000"))
+            actions.localMode:setItem(midiPlayer.getEmojiHead("globe","000"))
             actions.localMode:setHoverColor(vectors.hexToRGB("234463"))
         end
     end)
@@ -639,13 +643,13 @@ actions.localMode = midiPlayer.settings:newAction()
 
 actions.refreshFiles = midiPlayer.settings:newAction()
     :setTitle("refesh files")
-    :setItem(getEmojiHead("newspaper","000"))
+    :setItem(midiPlayer.getEmojiHead("newspaper","000"))
     :setOnLeftClick(function()
         for _,directory in pairs(midiPlayer.directories) do
             directory.hasScannedDirectory = false
         end
         midiPlayer.getMidiData(midiPlayer.directories[midiPlayer.currentDirectory])
-        actions.refreshFiles:setItem(getEmojiHead("checkmark","000"))
+        actions.refreshFiles:setItem(midiPlayer.getEmojiHead("checkmark","000"))
             :setColor(vectors.hexToRGB("1B4429"))
             :setHoverColor(vectors.hexToRGB("1B4429"))
     end)
@@ -653,10 +657,10 @@ actions.refreshFiles = midiPlayer.settings:newAction()
     :setHoverColor(vectors.hexToRGB("4E4E4E"))
 
 if midiPlayer.localMode then
-    actions.localMode:setItem(getEmojiHead("folder","000"))
+    actions.localMode:setItem(midiPlayer.getEmojiHead("folder","000"))
     actions.localMode:setHoverColor(vectors.hexToRGB("635122"))
 else
-    actions.localMode:setItem(getEmojiHead("globe","000"))
+    actions.localMode:setItem(midiPlayer.getEmojiHead("globe","000"))
     actions.localMode:setHoverColor(vectors.hexToRGB("234463"))
 end
 
@@ -709,7 +713,7 @@ function midiPlayer.directory:new(directory,name,parent)
     return self
 end
 
-local function fast_read_byte_array(path)
+function midiPlayer.fast_read_byte_array(path)
     local stream = file:openReadStream(path)
     local future = stream:readAsync()
     repeat until future:isDone()
@@ -986,7 +990,7 @@ function events.MOUSE_PRESS(key,state)
                     end
                     if localMode then
                         if selectedSongLocal.state == "LOCAL" then
-                            selectedSongLocal.rawData = fast_read_byte_array(selectedSongLocal.path)
+                            selectedSongLocal.rawData = midiPlayer.fast_read_byte_array(selectedSongLocal.path)
                             midiPlayer.instance:newSong(selectedSongLocal.ID, selectedSongLocal.rawData)
                             midiPlayer.instance.songs[selectedSongLocal.ID].localMode = true
                             midiPlayer.instance.songs[selectedSongLocal.ID]:load()
@@ -1006,7 +1010,7 @@ function events.MOUSE_PRESS(key,state)
                                 selectedSongPinged:remove()
                             end
                             selectedSongLocal.pingSize = midiPlayer.pingSize
-                            selectedSongLocal.rawData = fast_read_byte_array(selectedSongLocal.path)
+                            selectedSongLocal.rawData = midiPlayer.fast_read_byte_array(selectedSongLocal.path)
                             midiPlayer.compressProjects[selectedSongLocal.ID] = midiPlayer.compressProject:new(selectedSongLocal.ID, selectedSongLocal.rawData)
                             selectedSongLocal.state = "COMPRESSING"
                         elseif selectedSongLocal.state == "GLOBAL" then
@@ -1051,14 +1055,6 @@ function events.MOUSE_PRESS(key,state)
                         midiPlayer.activeSong = nil
                     end
                 elseif midiPlayer.isShiftPressed then
-                    if directory.parent then
-                        if not directory.parent.hasScannedDirectory then
-                            midiPlayer.getMidiData(midiPlayer.directories[directory.parent.ID])
-                        end
-                        midiPlayer.currentDirectory = directory.parent.ID
-                    end
-                else
-                    if not selectedSongLocal then return end
                     if midiPlayer.instance.activeSong then
                         local state = midiPlayer.songs[midiPlayer.instance.activeSong].state
                         if midiPlayer.localMode then
@@ -1071,6 +1067,13 @@ function events.MOUSE_PRESS(key,state)
                                 pings.updateSong(midiPlayer.instance.songs[midiPlayer.instance.activeSong].ID, 0)
                             end
                         end
+                    end
+                else
+                    if directory.parent then
+                        if not directory.parent.hasScannedDirectory then
+                            midiPlayer.getMidiData(midiPlayer.directories[directory.parent.ID])
+                        end
+                        midiPlayer.currentDirectory = directory.parent.ID
                     end
                 end
             end

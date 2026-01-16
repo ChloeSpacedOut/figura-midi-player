@@ -23,6 +23,9 @@ local function progressMidi(instance,activeSong,sysTime,deltaTime)
                 end
                 local eventDeltaTime = activeSong.clock - activeTrack.lastEventTime
                 local targetDelta = activeTrack.sequence[i].deltaTime
+                if targetDelta > 100000000 then -- i hate midi
+                    targetDelta = 0
+                end
                 if eventDeltaTime >= targetDelta then
                     local typeFunction = midi.events[activeTrack.sequence[i].type]
                     if instance.onMidiEvent then

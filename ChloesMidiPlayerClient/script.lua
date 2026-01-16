@@ -1,6 +1,5 @@
 -- todo
 --[[ 
-- add song getTime (in quater notes)
 - set ping limit being bellow size of name bytes + ping name bytes must be considered
 - importing song stored in avatar
 - song info page (length, compression ratio, etc)

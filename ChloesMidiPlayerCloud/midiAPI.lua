@@ -46,7 +46,7 @@ function midi.song:play()
     end
     if not self.loaded then
         if not self.isLoading then
-            midiParser.readMidi(self,true)
+            midiParser.readMidi(self,1,true)
             self.isLoading = true
             return self
         else
@@ -145,6 +145,10 @@ function midi.song:setTime(quaterNote)
     return self
 end
 
+function midi.song:getTime()
+    return self.clock / self.ticksPerQuarterNote
+end
+
 function midi.song:pause()
     if not self.loaded then
         return self
@@ -164,8 +168,8 @@ function midi.song:pause()
 end
 
 
-function midi.song:load()
-    midiParser.readMidi(self)
+function midi.song:load(speed)
+    midiParser.readMidi(self,speed)
     return self
 end
 
