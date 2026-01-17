@@ -8,7 +8,7 @@ playerID[1],playerID[2],playerID[3],playerID[4] = client.uuidToIntArray(client:g
 
 local playerConfig = {
     midiAvatar = "b0e11a12-eada-4f28-bb70-eb8903219fe5",
-    directory = "curated_midis/mids"
+    directory = "ChloesMidiPlayer"
 }
 
 local midiPlayer = {
@@ -91,9 +91,12 @@ function events.tick()
             midiPlayer.hasMadeInstance = true
             midiPlayer.instance.volume = midiPlayer.volume
             if host:isHost() then
-                actions.midiPlayer:setTitle("Midi Player")
-                    :setOnLeftClick(function() action_wheel:setPage(midiPlayer.page) end)
-                    :setItem("jukebox")
+                if midiPlayer.instance:getPermissionLevel() ~= "MAX" then
+                    actions.midiPlayer:setTitle("Midi Player\nERROR: Midi player avatar is not set to MAX permissions")
+                else
+                    actions.midiPlayer:setTitle("Midi Player")
+                        :setOnLeftClick(function() action_wheel:setPage(midiPlayer.page) end)
+                end
             end
         end
     end
@@ -687,6 +690,7 @@ function midiPlayer:addMidiPlayer(page)
     midiPlayer.returnPage = page
     actions.midiPlayer = page:newAction()
         :setTitle("Midi Player\nERROR: Midi player avatar is not loaded")
+        :setItem("jukebox")
 end
 
 
