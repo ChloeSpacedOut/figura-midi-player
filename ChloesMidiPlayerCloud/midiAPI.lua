@@ -95,8 +95,8 @@ function midi.song:stop()
     return self
 end
 
-function midi.song:loop(bool)
-    self.loopState = bool
+function midi.song:loop()
+    self.loopState = true
     return self
 end
 
@@ -109,13 +109,9 @@ function midi.song:getLoop()
     return self.loopState
 end
 
-function midi.song:setPost(funct)
-    self.post = funct
+function midi.song:setPost(func)
+    self.post = func
     return self
-end
-
-function midi.song:getPost()
-    return self.post
 end
 
 function midi.song:setSpeed(speed)

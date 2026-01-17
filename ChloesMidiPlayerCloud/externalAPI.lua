@@ -23,6 +23,7 @@ function instance:new(ID,target)
     self.songs = {}
     self.tracks = {}
     self.channels = {}
+    self.parseProjects = {}
     return self
 end
 
@@ -70,13 +71,18 @@ function instance:getSound(id)
     return sounds[id]
 end
 
+function instance:setOnMidiEvent(func)
+    self.onMidiEvent = func
+    return self
+end
+
 function instance:updatePlayer()
     midiPlayer.updatePlayer(self)
     return self
 end
 
 function instance:updateParser()
-    midiParser.updateParser(midi)
+    midiParser.updateParser(self,midi)
     return self
 end
 
