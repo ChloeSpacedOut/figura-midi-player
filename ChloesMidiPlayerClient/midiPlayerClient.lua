@@ -7,7 +7,7 @@ local playerID = {}
 playerID[1],playerID[2],playerID[3],playerID[4] = client.uuidToIntArray(client:getViewer():getUUID())
 
 local playerConfig = {
-    midiAvatar = "b0e11a12-eada-4f28-bb70-eb8903219fe5",
+    midiAvatar = "c0cfded1-a213-47d5-8054-94437f4fb906",
     directory = "ChloesMidiPlayer"
 }
 
@@ -20,6 +20,8 @@ local midiPlayer = {
     avatarID = {},
     instance = nil,
     songs = {},
+    songData = {},
+    songDataIndex = {},
     directories = {},
     currentDirectory = playerConfig.directory,
     songTree = {},
@@ -58,10 +60,28 @@ function midiPlayer:setDisplayPos(val)
     return self
 end
 
+local songIndex = 0
+function events.tick()
+    if avatar:getPermissionLevel() ~= "MAX" then return end
+    if not midiPlayer.instance then return end
+    if midiPlayer.instance:getPermissionLevel() ~= "MAX" then return end
+    if world.getTime() % 100 == 0 then
+        if #midiPlayer.songData < 1 then return end
+        songIndex = (songIndex + 1) % #midiPlayer.songData
+        local song = midiPlayer.songData[songIndex + 1]
+        if (not midiPlayer.instance.songs[song.ID]) and song.isFinished then
+            local compressedSong = ""
+            for _,packet in ipairs(song.packets) do
+                compressedSong = compressedSong .. packet
+            end
+            midiPlayer.instance:newSong(song.ID,"")
+            midiPlayer.decompressProjects[song.ID] = midiPlayer.decompressProject:new(song.ID,compressedSong)
+        end
+    end
+end
 --#ENDREGION
 --#REGION midi player cloud setup
 midiPlayer.avatarID[1],midiPlayer.avatarID[2],midiPlayer.avatarID[3],midiPlayer.avatarID[4] = client.uuidToIntArray(playerConfig.midiAvatar)
-
 local midiPlayerHeadItem = world.newItem([=[minecraft:player_head{display:{Name:'{"text":"midiHead"}'},SkullOwner:{Id:[I;]=]..midiPlayer.avatarID[1]..","..midiPlayer.avatarID[2]..","..midiPlayer.avatarID[3]..","..midiPlayer.avatarID[4]..[=[]}}]=])
 local worldPart = models:newPart("midiPLayerHead","WORLD")
 local midiPlayerHeadTask = models.midiPLayerHead:newItem("midiPlayerHead")
@@ -318,23 +338,33 @@ function events.tick()
 end
 --#ENDREGION
 --#REGION pings
-function pings.sendSong(ID,currentChunk,isLastChunk,data)
+function pings.sendSong(ID,packetID,isLastPacket,data)
     if avatar:getPermissionLevel() ~= "MAX" then return end
-    if not midiPlayer.instance then return end
-    if midiPlayer.instance:getPermissionLevel() ~= "MAX" then return end
-    if (not midiPlayer.instance.songs[ID]) or (not midiPlayer.instance.songs[ID].songChunks) then
-        if currentChunk ~= 1 then return end
-        midiPlayer.instance:newSong(ID,"")
-        midiPlayer.instance.songs[ID].songChunks = {}
+    if not midiPlayer.songDataIndex[ID] then
+        if packetID ~= 1 then return end
+        local songTable = {
+            ID = ID,
+            isFinished = false,
+            packets = {}
+        }
+        table.insert(midiPlayer.songData,songTable)
+        midiPlayer.songDataIndex[ID] = #midiPlayer.songData
     end
-    midiPlayer.instance.songs[ID].songChunks[currentChunk] = data -- THIS CAN ERROR 
-    if isLastChunk then
-        local compressedSong = ""
-        for _,chunk in ipairs(midiPlayer.instance.songs[ID].songChunks) do
-            compressedSong = compressedSong .. chunk
+    local songIndex = midiPlayer.songDataIndex[ID]
+    
+    midiPlayer.songData[songIndex].packets[packetID] = data
+    if isLastPacket and midiPlayer.songDataIndex[ID] then
+        midiPlayer.songData[songIndex].isFinished = true
+        if not midiPlayer.instance then return end
+        if midiPlayer.instance:getPermissionLevel() ~= "MAX" then return end
+        if not midiPlayer.instance.songs[ID]then
+            local compressedSong = ""
+            for _,packet in ipairs(midiPlayer.songData[songIndex].packets) do
+                compressedSong = compressedSong .. packet
+            end
+            midiPlayer.instance:newSong(ID,"")
+            midiPlayer.decompressProjects[ID] = midiPlayer.decompressProject:new(ID,compressedSong)
         end
-        midiPlayer.instance.songs[ID].songChunks = nil
-        midiPlayer.decompressProjects[ID] = midiPlayer.decompressProject:new(ID,compressedSong)
     end
 end
 
@@ -450,7 +480,7 @@ local uploadStateLookup = {
     end,
     UPLOADING = function(name)
         local song = midiPlayer.songs[name]
-        return ":loading: :www:§b [" .. math.floor((song.currentChunk / song.totalChunks) * 100) .. "%] "
+        return ":loading: :www:§b [" .. math.floor((song.currentPacket / song.totalChunks) * 100) .. "%] "
     end,
     DECOMPRESSING = function(name)
         local project = midiPlayer.decompressProjects[name]
@@ -715,7 +745,7 @@ function midiPlayer.song:new(name,path)
     self.path = path
     self.rawData = nil
     self.state = "LOCAL"
-    self.currentChunk = 0
+    self.currentPacket = 0
     self.nameLength = string.len(name)
     self.pingSize = midiPlayer.pingSize
     return self
@@ -1066,9 +1096,14 @@ function events.MOUSE_PRESS(key,state)
                     if midiPlayer.instance.songs[songID] then
                         midiPlayer.instance.songs[songID]:remove()
                     end
+                    if midiPlayer.songDataIndex[songID] then
+                        table.remove(midiPlayer.songData,midiPlayer.songDataIndex[songID])
+                        midiPlayer.songDataIndex[songID] = nil
+                    end
+                    pings.updateSong(songID, 0)
                     midiPlayer.instance.songs[songID] = nil
                     midiPlayer.songs[songID].state = "LOCAL"
-                    midiPlayer.songs[songID].currentChunk = 0
+                    midiPlayer.songs[songID].currentPacket = 0
                     for index, song in pairs(midiPlayer.pingQueue) do
                         if song == songID then
                             table.remove(midiPlayer.pingQueue, index)
@@ -1140,7 +1175,7 @@ end
 function events.on_play_sound(sound)
     if sound == "minecraft:ui.toast.in" then
         if midiPlayer.pingQueue[1] then
-            midiPlayer.songs[midiPlayer.pingQueue[1]].currentChunk = math.max(0,midiPlayer.songs[midiPlayer.pingQueue[1]].currentChunk - midiPlayer.limitRoleback)
+            midiPlayer.songs[midiPlayer.pingQueue[1]].currentPacket = math.max(0,midiPlayer.songs[midiPlayer.pingQueue[1]].currentPacket - midiPlayer.limitRoleback)
         end
     end
 end
@@ -1154,20 +1189,20 @@ function events.tick()
         if midiPlayer.songs[queuedSong].state == "QUEUED" then
             midiPlayer.songs[queuedSong].state = "UPLOADING" 
         end
-        local currentChunk = midiPlayer.songs[queuedSong].currentChunk
+        local currentPacket = midiPlayer.songs[queuedSong].currentPacket
         local pingSize = midiPlayer.songs[queuedSong].pingSize - midiPlayer.songs[queuedSong].nameLength - 9
         local totalChunks = midiPlayer.songs[queuedSong].totalChunks
         local compressedData = midiPlayer.songs[queuedSong].compressedData
-        local dataChunk = string.sub(compressedData,currentChunk * pingSize,((currentChunk + 1) * pingSize) - 1)
-        local isLastChunk = currentChunk == totalChunks
+        local dataChunk = string.sub(compressedData,currentPacket * pingSize,((currentPacket + 1) * pingSize) - 1)
+        local isLastChunk = currentPacket == totalChunks
         if isLastChunk then
             midiPlayer.songs[queuedSong].state = "DECOMPRESSING"
             table.remove(midiPlayer.pingQueue,1)
             midiPlayer.songs[queuedSong].compressedData = nil
         else
-            midiPlayer.songs[queuedSong].currentChunk = currentChunk + 1
+            midiPlayer.songs[queuedSong].currentPacket = currentPacket + 1
         end
-        pings.sendSong(queuedSong,currentChunk + 1,isLastChunk,dataChunk)
+        pings.sendSong(queuedSong,currentPacket + 1,isLastChunk,dataChunk)
     end
 end
 
