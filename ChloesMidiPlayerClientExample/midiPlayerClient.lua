@@ -1,5 +1,5 @@
 -- midi player client by chloespacedout
--- version 1.0
+-- version 1.1
 
 --#REGION global
 --#REGION setup
@@ -110,7 +110,7 @@ function events.tick()
             midiPlayer.instance = midiPlayer.midiAPI.newInstance(player:getName(),player)
             midiPlayer.hasMadeInstance = true
             midiPlayer.instance.volume = midiPlayer.volume
-            if host:isHost() then
+            if host:isHost() and actions.midiPlayer then
                 if midiPlayer.instance:getPermissionLevel() ~= "MAX" then
                     actions.midiPlayer:setTitle("Midi Player\nERROR: Midi player avatar is not set to MAX permissions")
                 else
@@ -726,7 +726,10 @@ end
 
 function events.tick()
     local actionWheelOpen = action_wheel:isEnabled()
-    local currentPage = action_wheel:getCurrentPage():getTitle()
+    local currentPage
+    if action_wheel:getCurrentPage() then
+    currentPage = action_wheel:getCurrentPage():getTitle()
+    end
     local selectedAction = action_wheel:getSelected()
     if actionWheelOpen and currentPage == "midiPlayerPage" and selectedAction == 3 then
         generateSongSelector()
@@ -800,7 +803,7 @@ function midiPlayer.getMidiData(directory)
 end
 
 if not playerConfig.directory:find("%.[^.]-$") then
-    file:mkdir(playerConfig.directory)
+    file:mkdirs(playerConfig.directory)
 end
 
 midiPlayer.directories[playerConfig.directory] = midiPlayer.directory:new(playerConfig.directory,playerConfig.directory)
@@ -1031,10 +1034,12 @@ function events.MOUSE_PRESS(key,state)
             if key == 0 then
                 if directory.selectedIndex <= #directory.childrenIndex then
                     local childDirectory = directory.childrenIndex[directory.selectedIndex]
-                    if not childDirectory.hasScannedDirectory then
-                        midiPlayer.getMidiData(midiPlayer.directories[childDirectory.ID])
+                    if childDirectory then
+                        if not childDirectory.hasScannedDirectory then
+                            midiPlayer.getMidiData(midiPlayer.directories[childDirectory.ID])
+                        end
+                        midiPlayer.currentDirectory = childDirectory.ID
                     end
-                    midiPlayer.currentDirectory = childDirectory.ID
                 else
                     if not selectedSongLocal then return end
                     local localMode = midiPlayer.localMode
@@ -1141,7 +1146,10 @@ end
 
 function events.KEY_PRESS(key,state)
     local actionWheelOpen = action_wheel:isEnabled()
-    local currentPage = action_wheel:getCurrentPage():getTitle()
+    local currentPage
+    if action_wheel:getCurrentPage() then
+        currentPage = action_wheel:getCurrentPage():getTitle()
+    end
     local selectedAction = action_wheel:getSelected()
     if actionWheelOpen and (currentPage == "midiPlayerPage" or currentPage == "midiPlayerSettings") then
         if key == 340 then
