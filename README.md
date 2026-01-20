@@ -11,6 +11,9 @@ midiPlayer:addMidiPlayer(myActionWheelPage)
 ```
 Your final script may look something like this:
 ```lua
+-- require midi player
+local midiPlayer = require("midiPlayerClient")
+
 -- standard action wheel host check
 if not host:isHost() then return end
 
@@ -19,7 +22,6 @@ local mainPage = action_wheel:newPage("mainPage")
 action_wheel:setPage(mainPage)
 
 -- set up midi player
-local midiPlayer = require("midiPlayerClient")
 midiPlayer:addMidiPlayer(mainPage)
 ```
 With this done, you should see the midi player icon in your action wheel!
@@ -43,7 +45,7 @@ How much data will be sent per second with pings. Setting this too low will brea
 ### Ratelimit Roleback
 How many pings will be reverted every time the Figura cloud rate limit is reached. This helps prevent rate limits breaking your upload. Setting this too high may reset too much of your upload, and too low data may be lost. Holding `ctrl` while scrolling lets you change the roleback faster.
 ### Toggle Local Mode
-Toggles local mode. With local mode toggled, songs will not be sent to other clients, allowing you to listen to songs faster. With local mode toggled on, using `alt local mode` when selecting a song will instead upload it.
+Toggles local mode. With localling mode toggled, songs will not be sent to other clients, allowing you to listen to songs faster. With local mode toggled on, using `alt local mode` when selecting a song will instead upload it.
 ### Refresh Files
 Refreshes midi file data, allowing you to add new songs to `figura/data/ChloesMidiPlayer` and use them without reloading your avatar.
 ## controls
