@@ -230,7 +230,7 @@ function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
         self.instrument = soundfont.soundTree[129]
     end
     if not self.instrument then
-        local redundancy = soundfont.redundancyMappings[channel.instrument + 1]
+        local redundancy = soundfont.redundancyMappings[tostring(channel.instrument + 1)]
         if redundancy then
             self.instrument = soundfont.soundTree[redundancy]
         else
@@ -280,7 +280,7 @@ function midi.note:sustain()
     if not self.instrument.Sustain then
         self.state = "RELEASED"
         return
-     end
+    end
     if self.state ~= "RELEASED" then 
         self.state = "SUSTAINING"
     end
@@ -310,6 +310,7 @@ function midi.note:sustain()
 end
 
 function midi.note:release(sysTime)
+    if self.state == "RELEASED" then return end
     self.state = "RELEASED"
     self.releaseTime = sysTime
 end

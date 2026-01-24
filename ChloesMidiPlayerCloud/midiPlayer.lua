@@ -120,14 +120,6 @@ local function updateNotes(instance,sysTime)
     end
 end
 
-function events.render()
-    for _,instance in pairs(midiPlayer.instances) do
-        if (instance.lastUpdated + 1000) < client.getSystemTime() then
-            instance:remove()
-        end
-    end
-end
-
 function midiPlayer.updatePlayer(instance)
     local sysTime = client.getSystemTime()
     local deltaTime = sysTime - instance.lastSysTime
@@ -136,6 +128,8 @@ function midiPlayer.updatePlayer(instance)
     local activeSong = instance.songs[instance.activeSong]
     if activeSong and activeSong.state == "PLAYING" then
         progressMidi(instance,activeSong,sysTime,deltaTime)
+        updateNotes(instance,sysTime)
+    elseif not activeSong then
         updateNotes(instance,sysTime)
     end
 end
