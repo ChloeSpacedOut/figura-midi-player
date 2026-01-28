@@ -210,25 +210,29 @@ function midi.channel:remove()
     self.instance.channels[self.ID] = nil
 end
 
-function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime,pos)
+function midi.note:play(instance,pitch,velocity,channelID,trackID,sysTime,pos)
     self = setmetatable({},midi.note)
-    if instance.tracks[track][pitch] then
-        instance.tracks[track][pitch]:stop()
+    local track = instance.tracks[trackID]
+    if not track then
+        instance.tracks[channelID] = {}
+    end
+    if instance.tracks[trackID][pitch] then
+        instance.tracks[trackID][pitch]:stop()
     end
     self.state = "PLAYING"
     self.instance = instance
     self.pitch = pitch
     self.velocity = velocity/100
-    self.channel = currentChannel
-    self.track = track
+    self.channel = channelID
+    self.track = trackID
     self.pos = pos
     self.initTime = sysTime
-    local channel = instance.channels[currentChannel]
+    local channel = instance.channels[channelID]
     if not channel then
-        channel = midi.channel:new(instance,currentChannel)
-        instance.channels[currentChannel] = channel
+        channel = midi.channel:new(instance,channelID)
+        instance.channels[channelID] = channel
     end
-    if currentChannel ~= 9 then
+    if channelID ~= 9 then
         self.instrument = soundfont.soundTree[channel.instrument + 1]
     else
         self.instrument = soundfont.soundTree[129]
@@ -278,7 +282,7 @@ function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime,pos
     self.sound = sounds[soundID]
     local soundPitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
     self.sound:pos(targetPos):volume(self.velocity * channel.volume * instance.volume):pitch(soundPitch):loop(not hasMain):subtitle("MIDI song plays"):play()
-    instance.tracks[track][pitch] = self
+    instance.tracks[trackID][pitch] = self
     return self
 end
 
