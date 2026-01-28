@@ -210,14 +210,18 @@ function midi.channel:remove()
     self.instance.channels[self.ID] = nil
 end
 
-function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
+function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime,pos)
     self = setmetatable({},midi.note)
+    if instance.tracks[track][pitch] then
+        instance.tracks[track][pitch]:stop()
+    end
     self.state = "PLAYING"
     self.instance = instance
     self.pitch = pitch
     self.velocity = velocity/100
     self.channel = currentChannel
     self.track = track
+    self.pos = pos
     self.initTime = sysTime
     local channel = instance.channels[currentChannel]
     if not channel then
@@ -267,12 +271,14 @@ function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
         end
         targetPos = instance.target:getPos()
     end
+    if pos then targetPos = pos end
 
     self.duration = soundfont.soundDuration[soundID]
 
     self.sound = sounds[soundID]
-    local pitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
-    self.sound:pos(targetPos):volume(self.velocity * channel.volume * instance.volume):pitch(pitch):loop(not hasMain):subtitle("MIDI song plays"):play()
+    local soundPitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
+    self.sound:pos(targetPos):volume(self.velocity * channel.volume * instance.volume):pitch(soundPitch):loop(not hasMain):subtitle("MIDI song plays"):play()
+    instance.tracks[track][pitch] = self
     return self
 end
 
@@ -332,10 +338,7 @@ midi.events = {
             midi.events.noteOff(instance,eventData,sysTime,activeTrack,trackID,activeSong)
             return
         end
-        if instance.tracks[trackID][eventData.key] then
-            instance.tracks[trackID][eventData.key]:stop()
-        end
-        instance.tracks[trackID][eventData.key] = midi.note:play(instance,eventData.key,eventData.velocity,eventData.channel,trackID,sysTime)
+        midi.note:play(instance,eventData.key,eventData.velocity,eventData.channel,trackID,sysTime)
     end,
     noteOff = function(instance,eventData,sysTime,activeTrack,trackID,activeSong)
         if instance.tracks[trackID][eventData.key] then

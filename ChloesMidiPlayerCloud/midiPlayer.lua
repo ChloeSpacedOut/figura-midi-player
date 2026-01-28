@@ -70,14 +70,20 @@ local function updateNotes(instance,sysTime)
     end
     for _,track in pairs(instance.tracks) do
         for _,note in pairs(track) do
+            local notePos
+            if note.pos then 
+                notePos = note.pos
+            else
+                notePos = targetPos
+            end
             local channel = note.instance.channels[note.channel]
             local pitch = note.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
             if note.sound then
-                note.sound:pos(targetPos)
+                note.sound:pos(notePos)
                     :pitch(pitch)
             end
             if note.loopSound then
-                note.loopSound:pos(targetPos)
+                note.loopSound:pos(notePos)
                     :pitch(pitch)
             end
             local instrument = soundfont.instruments[note.instrument.index]
