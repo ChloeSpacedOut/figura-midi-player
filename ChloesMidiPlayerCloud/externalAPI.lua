@@ -18,6 +18,7 @@ function instance:new(ID,target)
     self.isRemoved = false
     self.target = target
     self.volume = 1
+    self.attenuation = 1
     self.midi = midi
     self.soundfont = soundfont
     self.lastSysTime = client.getSystemTime()
@@ -70,14 +71,6 @@ function instance:getPermissionLevel()
     return avatar:getPermissionLevel()
 end
 
-function instance:listSounds()
-    return sounds:getCustomSounds()
-end
-
-function instance:getSound(id)
-    return sounds[id]
-end
-
 function instance:setOnMidiEvent(func)
     self.onMidiEvent = func
     return self
@@ -95,6 +88,14 @@ local function newInstance(ID,target)
     end
     midiPlayer.instances[ID] = addedInstance
     return addedInstance
+end
+
+local function listSounds()
+    return sounds:getCustomSounds()
+end
+
+local function getSound(id)
+    return sounds[id]
 end
 
 function events.world_render()
@@ -115,4 +116,6 @@ function events.world_tick()
 end
 
 avatar:store("newInstance",newInstance)
-avatar:store("sessionID",math.random())
+avatar:store("listSounds",listSounds)
+avatar:store("getSound",getSound)
+avatar:store("sessionID",client.generateUUID())

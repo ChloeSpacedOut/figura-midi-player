@@ -174,9 +174,10 @@ function midi.song:remove()
     if self.parseProject then   
         self.parseProject:remove()
     end
-    self.instance.songs[self.ID]:stop()
+    if self.instance.activeSong == self.ID then
+        self.instance.songs[self.ID]:stop()
+    end
     self.instance.songs[self.ID] = nil
-    -- add removing parser projects here
 end
 
 function midi.track:new()
@@ -281,7 +282,13 @@ function midi.note:play(instance,pitch,velocity,channelID,trackID,sysTime,pos)
 
     self.sound = sounds[soundID]
     local soundPitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
-    self.sound:pos(targetPos):volume(self.velocity * channel.volume * instance.volume):pitch(soundPitch):loop(not hasMain):subtitle("MIDI song plays"):play()
+    self.sound:pos(targetPos)
+        :volume(self.velocity * channel.volume * instance.volume)
+        :attenuation(instance.attenuation)
+        :pitch(soundPitch)
+        :loop(not hasMain)
+        :subtitle("MIDI song plays")
+        :play()
     instance.tracks[trackID][pitch] = self
     return self
 end
@@ -313,7 +320,13 @@ function midi.note:sustain()
         self.sound:stop()
         self.loopSound = sounds[soundID]
         local pitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
-        self.loopSound:pos(targetPos):volume(self.velocity * channel.volume * self.instance.volume):pitch(pitch):loop(true):subtitle("MIDI song plays"):play()
+        self.loopSound:pos(targetPos)
+            :volume(self.velocity * channel.volume * self.instance.volume)
+            :attenuation(self.instance.attenuation)
+            :pitch(pitch)
+            :loop(true)
+            :subtitle("MIDI song plays")
+            :play()
     else
         self.loopSound = self.sound
     end

@@ -102,16 +102,20 @@ local function updateNotes(instance,sysTime)
                     if instrument.resonance ~= 0 then
                         if note.loopSound then
                             note.loopSound:volume(noteVol * resonanceMod * note.velocity * channel.volume * instance.volume)
+                                :attenuation(note.instance.attenuation)
                         elseif note.sound then
                             note.sound:volume(noteVol * resonanceMod * note.velocity * channel.volume * instance.volume)
+                                :attenuation(note.instance.attenuation)
                         end
                     else
                         note:stop()
                     end
                 elseif note.state == "SUSTAINING" then
                     note.loopSound:volume(noteVol * note.velocity * channel.volume * instance.volume)
+                        :attenuation(note.instance.attenuation)
                 elseif note.state == "PLAYING" then
                     note.sound:volume(noteVol * note.velocity * channel.volume * instance.volume)
+                        :attenuation(note.instance.attenuation)
                 end
             end
             if instrument.resonance ~= 0 and note.state == "RELEASED" then
