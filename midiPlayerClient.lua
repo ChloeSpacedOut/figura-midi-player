@@ -14,6 +14,7 @@ local playerConfig = {
 local midiPlayer = {
     page = action_wheel:newPage("midiPlayerPage"),
     settings = action_wheel:newPage("midiPlayerSettings"),
+    owner = avatar:getEntityName(),
     returnPage = nil,
     hasMadeInstance = false,
     midiAPI = nil,
@@ -90,18 +91,6 @@ midiPlayerHeadTask:setItem(midiPlayerHeadItem)
 
 local actions = {}
 
-function events.render()
-    if midiPlayer.instance then
-        midiPlayer.instance:updatePlayer()
-    end
-end
-
-function events.tick()
-    if midiPlayer.instance then
-        midiPlayer.instance:updateParser()
-    end
-end
-
 function events.tick()
     if not midiPlayer.hasMadeInstance then
         midiPlayer.midiAPI = world.avatarVars()[playerConfig.midiAvatar]
@@ -118,6 +107,15 @@ function events.tick()
                         :setOnLeftClick(function() action_wheel:setPage(midiPlayer.page) end)
                 end
             end
+            midiPlayer.instance:setShouldKillInstance(function()
+                local isHostOffline = true
+                for _,playerName in pairs(client.getTabList().players) do
+                    if playerName == midiPlayer.owner then
+                        isHostOffline = false
+                    end
+                end
+                return isHostOffline
+            end)
         end
     end
 end
@@ -163,19 +161,27 @@ function events.tick()
             local targetEntity = clientEntity:getTargetedEntity(15)
             if clientEntity:isCrouching() and targetEntity and targetEntity:getUUID() == playerID then
                 local scrollAmount = currentItemSlot - lastItemSlot
-                scrollAmount = ((scrollAmount - 4) % 9) - 5
-                midiPlayer.instance.volume = math.clamp(midiPlayer.instance.volume + (scrollAmount/10),0,1)
+                scrollAmount = -(((scrollAmount - 4) % 9) - 5)
+                local newVolumeUnclamped = midiPlayer.instance.volume + (scrollAmount/10)
+                local attenuationMod = 0
+                if newVolumeUnclamped < 0 then
+                    attenuationMod = -1
+                elseif newVolumeUnclamped > 1 then
+                    attenuationMod = 1
+                end
+                midiPlayer.instance.volume = math.clamp(newVolumeUnclamped,0,1)
+                midiPlayer.instance.attenuation = math.max(1,math.floor((midiPlayer.instance.attenuation + attenuationMod)))
 
                 local volumeBar = ""
-                local playProgress = math.ceil((midiPlayer.instance.volume * 10)) + 1
+                local volumeBarPos = math.ceil((midiPlayer.instance.volume * 10)) + 1
                 for i = 1, 10 do
-                    if i >= playProgress then 
+                    if i >= volumeBarPos then 
                         volumeBar = volumeBar .. "§7█"
                     else
                         volumeBar = volumeBar .. "§a█"
                     end
                 end
-                volumeDisplay = "\n§avolume: - " .. volumeBar .. " §a+"
+                volumeDisplay = "\n§avolume: - " .. volumeBar .. " §a+  distance: [" .. midiPlayer.instance.attenuation .. "]"
             end
             local playing
             if song.state == "PLAYING" then
@@ -351,7 +357,7 @@ function pings.sendSong(ID,packetID,isLastPacket,data)
         midiPlayer.songDataIndex[ID] = #midiPlayer.songData
     end
     local songIndex = midiPlayer.songDataIndex[ID]
-    
+    if not midiPlayer.songData[songIndex] then return end
     midiPlayer.songData[songIndex].packets[packetID] = data
     if isLastPacket and midiPlayer.songDataIndex[ID] then
         midiPlayer.songData[songIndex].isFinished = true
@@ -511,7 +517,6 @@ local playStateLookup = {
 }
 
 local function generateSongSelector()
-    
     local directory = midiPlayer.directories[midiPlayer.currentDirectory]
     local folder = directory.ID
     if string.len(folder) > 45 then
@@ -1101,11 +1106,15 @@ function events.MOUSE_PRESS(key,state)
                     if midiPlayer.instance.songs[songID] then
                         midiPlayer.instance.songs[songID]:remove()
                     end
-                    if midiPlayer.songDataIndex[songID] then
+                    if midiPlayer.songDataIndex[songID] and midiPlayer.songData[midiPlayer.songDataIndex[songID]] then
                         table.remove(midiPlayer.songData,midiPlayer.songDataIndex[songID])
+                        for song,index in pairs(midiPlayer.songDataIndex) do
+                            if index > midiPlayer.songDataIndex[songID] then
+                                midiPlayer.songDataIndex[song] = index - 1
+                            end
+                        end
                         midiPlayer.songDataIndex[songID] = nil
                     end
-                    pings.updateSong(songID, 0)
                     midiPlayer.instance.songs[songID] = nil
                     midiPlayer.songs[songID].state = "LOCAL"
                     midiPlayer.songs[songID].currentPacket = 0
@@ -1114,7 +1123,8 @@ function events.MOUSE_PRESS(key,state)
                             table.remove(midiPlayer.pingQueue, index)
                         end
                     end
-                    if midiPlayer.activeSong == songID then
+                    if songID == midiPlayer.activeSong then
+                        pings.updateSong(songID, 0)
                         midiPlayer.activeSong = nil
                     end
                 elseif midiPlayer.isShiftPressed then
