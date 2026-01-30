@@ -174,9 +174,10 @@ function midi.song:remove()
     if self.parseProject then   
         self.parseProject:remove()
     end
-    self.instance.songs[self.ID]:stop()
+    if self.instance.activeSong == self.ID then
+        self.instance.songs[self.ID]:stop()
+    end
     self.instance.songs[self.ID] = nil
-    -- add removing parser projects here
 end
 
 function midi.track:new()
@@ -210,27 +211,35 @@ function midi.channel:remove()
     self.instance.channels[self.ID] = nil
 end
 
-function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
+function midi.note:play(instance,pitch,velocity,channelID,trackID,sysTime,pos)
     self = setmetatable({},midi.note)
+    local track = instance.tracks[trackID]
+    if not track then
+        instance.tracks[channelID] = {}
+    end
+    if instance.tracks[trackID][pitch] then
+        instance.tracks[trackID][pitch]:stop()
+    end
     self.state = "PLAYING"
     self.instance = instance
     self.pitch = pitch
     self.velocity = velocity/100
-    self.channel = currentChannel
-    self.track = track
+    self.channel = channelID
+    self.track = trackID
+    self.pos = pos
     self.initTime = sysTime
-    local channel = instance.channels[currentChannel]
+    local channel = instance.channels[channelID]
     if not channel then
-        channel = midi.channel:new(instance,currentChannel)
-        instance.channels[currentChannel] = channel
+        channel = midi.channel:new(instance,channelID)
+        instance.channels[channelID] = channel
     end
-    if currentChannel ~= 9 then
+    if channelID ~= 9 then
         self.instrument = soundfont.soundTree[channel.instrument + 1]
     else
         self.instrument = soundfont.soundTree[129]
     end
     if not self.instrument then
-        local redundancy = soundfont.redundancyMappings[channel.instrument + 1]
+        local redundancy = soundfont.redundancyMappings[tostring(channel.instrument + 1)]
         if redundancy then
             self.instrument = soundfont.soundTree[redundancy]
         else
@@ -267,12 +276,20 @@ function midi.note:play(instance,pitch,velocity,currentChannel,track,sysTime)
         end
         targetPos = instance.target:getPos()
     end
+    if pos then targetPos = pos end
 
     self.duration = soundfont.soundDuration[soundID]
 
     self.sound = sounds[soundID]
-    local pitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
-    self.sound:pos(targetPos):volume(self.velocity * channel.volume * instance.volume):pitch(pitch):loop(not hasMain):subtitle("MIDI song plays"):play()
+    local soundPitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
+    self.sound:pos(targetPos)
+        :volume(self.velocity * channel.volume * instance.volume)
+        :attenuation(instance.attenuation)
+        :pitch(soundPitch)
+        :loop(not hasMain)
+        :subtitle("MIDI song plays")
+        :play()
+    instance.tracks[trackID][pitch] = self
     return self
 end
 
@@ -280,7 +297,7 @@ function midi.note:sustain()
     if not self.instrument.Sustain then
         self.state = "RELEASED"
         return
-     end
+    end
     if self.state ~= "RELEASED" then 
         self.state = "SUSTAINING"
     end
@@ -303,13 +320,20 @@ function midi.note:sustain()
         self.sound:stop()
         self.loopSound = sounds[soundID]
         local pitch = self.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
-        self.loopSound:pos(targetPos):volume(self.velocity * channel.volume * self.instance.volume):pitch(pitch):loop(true):subtitle("MIDI song plays"):play()
+        self.loopSound:pos(targetPos)
+            :volume(self.velocity * channel.volume * self.instance.volume)
+            :attenuation(self.instance.attenuation)
+            :pitch(pitch)
+            :loop(true)
+            :subtitle("MIDI song plays")
+            :play()
     else
         self.loopSound = self.sound
     end
 end
 
 function midi.note:release(sysTime)
+    if self.state == "RELEASED" then return end
     self.state = "RELEASED"
     self.releaseTime = sysTime
 end
@@ -331,10 +355,7 @@ midi.events = {
             midi.events.noteOff(instance,eventData,sysTime,activeTrack,trackID,activeSong)
             return
         end
-        if instance.tracks[trackID][eventData.key] then
-            instance.tracks[trackID][eventData.key]:stop()
-        end
-        instance.tracks[trackID][eventData.key] = midi.note:play(instance,eventData.key,eventData.velocity,eventData.channel,trackID,sysTime)
+        midi.note:play(instance,eventData.key,eventData.velocity,eventData.channel,trackID,sysTime)
     end,
     noteOff = function(instance,eventData,sysTime,activeTrack,trackID,activeSong)
         if instance.tracks[trackID][eventData.key] then

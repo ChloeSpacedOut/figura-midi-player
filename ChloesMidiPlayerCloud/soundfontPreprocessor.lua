@@ -138,6 +138,15 @@ soundfont.redundancyMappings = {
     [112] = 110
 }
 
+soundfont.redundancyNames = {
+    [2] = "Bright Acoustic Piano",
+    [3] = "Electric Grand Piano",
+    [42] = "Viola",
+    [52] = "SynthStrings 2",
+    [95] = "Pad 7 (halo)",
+    [112] = "Shanai"
+}
+
 -- generate soundTree
 for _,soundString in pairs(sounds:getCustomSounds()) do
     if string.sub(soundString,1,7) == "samples" then

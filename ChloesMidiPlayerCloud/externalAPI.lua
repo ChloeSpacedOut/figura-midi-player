@@ -1,9 +1,10 @@
 -- midi player cloud by chloespacedout
--- version 1.0
+-- version 1.1
 
 local midiPlayer = require("midiPlayer")
 local midiParser = require("midiParser")
 local midi = require("midiAPI")
+local soundfont = require("soundfont")
 
 nameplate.ALL:setText("Midi Player Cloud")
 
@@ -17,7 +18,9 @@ function instance:new(ID,target)
     self.isRemoved = false
     self.target = target
     self.volume = 1
+    self.attenuation = 1
     self.midi = midi
+    self.soundfont = soundfont
     self.lastSysTime = client.getSystemTime()
     self.lastUpdated = client.getSystemTime()
     self.songs = {}
@@ -28,6 +31,11 @@ function instance:new(ID,target)
 end
 
 function instance:remove()
+    for _,track in pairs(self.tracks) do
+        for _,note in pairs(track) do
+            note:stop()
+        end
+    end
     if self.activeSong then
         self.songs[self.activeSong]:remove()
     end
@@ -63,37 +71,51 @@ function instance:getPermissionLevel()
     return avatar:getPermissionLevel()
 end
 
-function instance:listSounds()
-    return sounds:getCustomSounds()
-end
-
-function instance:getSound(id)
-    return sounds[id]
-end
-
 function instance:setOnMidiEvent(func)
     self.onMidiEvent = func
     return self
 end
 
-function instance:updatePlayer()
-    midiPlayer.updatePlayer(self)
-    return self
-end
-
-function instance:updateParser()
-    midiParser.updateParser(self,midi)
+function instance:setShouldKillInstance(func)
+    self.shouldKillInstance = func
     return self
 end
 
 local function newInstance(ID,target)
-    local newInstance = instance:new(ID,target)
+    local addedInstance = instance:new(ID,target)
     if midiPlayer.instances[ID] then
         midiPlayer.instances[ID]:remove()
     end
-    midiPlayer.instances[ID] = newInstance
-    return newInstance
+    midiPlayer.instances[ID] = addedInstance
+    return addedInstance
+end
+
+local function listSounds()
+    return sounds:getCustomSounds()
+end
+
+local function getSound(id)
+    return sounds[id]
+end
+
+function events.world_render()
+    for ID,currentInstance in pairs(midiPlayer.instances) do
+        midiPlayer.updatePlayer(currentInstance)
+    end
+end
+
+function events.world_tick()
+    for ID,currentInstance in pairs(midiPlayer.instances) do
+        if currentInstance.shouldKillInstance then
+            if currentInstance:shouldKillInstance() then
+                currentInstance:remove()
+            end
+        end
+        midiParser.updateParser(currentInstance,midi)
+    end
 end
 
 avatar:store("newInstance",newInstance)
-avatar:store("sessionID",math.random())
+avatar:store("listSounds",listSounds)
+avatar:store("getSound",getSound)
+avatar:store("sessionID",client.generateUUID())

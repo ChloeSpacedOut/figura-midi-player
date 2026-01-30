@@ -70,14 +70,20 @@ local function updateNotes(instance,sysTime)
     end
     for _,track in pairs(instance.tracks) do
         for _,note in pairs(track) do
+            local notePos
+            if note.pos then 
+                notePos = note.pos
+            else
+                notePos = targetPos
+            end
             local channel = note.instance.channels[note.channel]
             local pitch = note.soundPitch * 2^(math.map(channel.pitchBend,0,16383,-channel.pitchBendRange,channel.pitchBendRange)/12)
             if note.sound then
-                note.sound:pos(targetPos)
+                note.sound:pos(notePos)
                     :pitch(pitch)
             end
             if note.loopSound then
-                note.loopSound:pos(targetPos)
+                note.loopSound:pos(notePos)
                     :pitch(pitch)
             end
             local instrument = soundfont.instruments[note.instrument.index]
@@ -96,16 +102,20 @@ local function updateNotes(instance,sysTime)
                     if instrument.resonance ~= 0 then
                         if note.loopSound then
                             note.loopSound:volume(noteVol * resonanceMod * note.velocity * channel.volume * instance.volume)
+                                :attenuation(note.instance.attenuation)
                         elseif note.sound then
                             note.sound:volume(noteVol * resonanceMod * note.velocity * channel.volume * instance.volume)
+                                :attenuation(note.instance.attenuation)
                         end
                     else
                         note:stop()
                     end
                 elseif note.state == "SUSTAINING" then
                     note.loopSound:volume(noteVol * note.velocity * channel.volume * instance.volume)
+                        :attenuation(note.instance.attenuation)
                 elseif note.state == "PLAYING" then
                     note.sound:volume(noteVol * note.velocity * channel.volume * instance.volume)
+                        :attenuation(note.instance.attenuation)
                 end
             end
             if instrument.resonance ~= 0 and note.state == "RELEASED" then
@@ -120,14 +130,6 @@ local function updateNotes(instance,sysTime)
     end
 end
 
-function events.render()
-    for _,instance in pairs(midiPlayer.instances) do
-        if (instance.lastUpdated + 1000) < client.getSystemTime() then
-            instance:remove()
-        end
-    end
-end
-
 function midiPlayer.updatePlayer(instance)
     local sysTime = client.getSystemTime()
     local deltaTime = sysTime - instance.lastSysTime
@@ -136,6 +138,8 @@ function midiPlayer.updatePlayer(instance)
     local activeSong = instance.songs[instance.activeSong]
     if activeSong and activeSong.state == "PLAYING" then
         progressMidi(instance,activeSong,sysTime,deltaTime)
+        updateNotes(instance,sysTime)
+    elseif not activeSong then
         updateNotes(instance,sysTime)
     end
 end
