@@ -35,7 +35,8 @@ local function variableLengthBitsToNum(bits)
     return num
 end
 
-local function readVariableLengthInt(buffer,bufferLength)
+local function readVariableLengthInt(buffer)
+    local bufferLength = buffer:getLength()
     local startPos = buffer:getPosition()
     repeat
         local val = buffer:read()
@@ -294,8 +295,24 @@ function midiParser.project:remove()
     self.song.instance.parseProjects[self.ID] = nil
 end
 
+midiParser.track = {}
+midiParser.track.__index = midiParser.track
+
+function midiParser.track:new()
+    self = setmetatable({},midiParser.track)
+    self.sequenceIndex = 1
+    self.lastEventTime = 0
+    self.isEnded = false
+    self.trackLength = 0
+    self.sequence = {}
+    return self
+end
+
 local function exitParser(project)
     project.song.loaded = true
+    if project.song.onLoaded then
+        project.song:onLoaded()
+    end
     project.song.isLoading = false
     if project.shouldQueueSong then
         project.song:play()
@@ -306,7 +323,7 @@ local function exitParser(project)
     project:remove()
 end
 
-function midiParser.updateParser(instance,midi)
+function midiParser.updateParser(instance)
     for _,project in pairs(instance.parseProjects) do
         local buffer = project.buffer
         if buffer:isClosed() then
@@ -341,7 +358,7 @@ function midiParser.updateParser(instance,midi)
             if not project.currentTrack then
                 local trackHeader = buffer:readString(4)
                 if trackHeader == "MTrk" then
-                    project.currentTrack = midi.track:new()
+                    project.currentTrack = midiParser.track:new()
                     project.currentTrack.length = buffer:readInt()
                     project.currentTrack.eventStartPos = buffer:getPosition()
                 else
@@ -473,6 +490,7 @@ end
 
 function midiParser.readMidi(midiSong,speed,shouldQueueSong)
     midiSong.instance.parseProjects[midiSong.ID] = midiParser.project:new(midiSong,speed,shouldQueueSong)
+    midiSong.isLoading = true
 end
 
 return midiParser

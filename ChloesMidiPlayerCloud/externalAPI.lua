@@ -1,5 +1,5 @@
 -- midi player cloud by chloespacedout
--- version 1.1
+-- version 1.2
 
 local midiPlayer = require("midiPlayer")
 local midiParser = require("midiParser")
@@ -81,7 +81,40 @@ function instance:setShouldKillInstance(func)
     return self
 end
 
-local function newInstance(ID,target)
+local function newInstance(ID,target,avatarInstance)
+    if (not ID) or (not tostring(ID)) then
+        log("Could not create midi player cloud instance as ID was invalid or not provided")
+        return
+    end
+    ID = tostring(ID)
+    local isValidTarget = (type(target) == "PlayerAPI") or (type(target) == "BlockState") or (type(target) == "Vector3")
+    if (not target) or (not isValidTarget) then
+        log("Could not create midi player cloud instance as target was invalid or not provided")
+        return
+    end
+    if avatarInstance and type(avatarInstance) == "AvatarAPI" then
+        local permissionLevel
+        local avatarName
+        local isSuccessful = pcall(function()
+            permissionLevel = avatar.getPermissionLevel(avatarInstance)
+            avatarName = avatar.getName(avatarInstance)
+        end)
+        if not isSuccessful then
+            log("Could not create midi player cloud instance as avatar instance was invalid")
+            return
+        end
+        if permissionLevel ~= "MAX" then
+            log("Could not create midi player cloud instance as client \"" .. avatarName .. "\" is not set to MAX perms")
+            return
+        end
+    else
+        log("Could not create midi player cloud instance as avatar instance was invalid or not provided")
+        return
+    end
+    if avatar:getPermissionLevel() ~= "MAX" then
+        log("Could not create midi player cloud instance as midi player cloud is not set to MAX perms")
+        return
+    end
     local addedInstance = instance:new(ID,target)
     if midiPlayer.instances[ID] then
         midiPlayer.instances[ID]:remove()
@@ -111,7 +144,7 @@ function events.world_tick()
                 currentInstance:remove()
             end
         end
-        midiParser.updateParser(currentInstance,midi)
+        midiParser.updateParser(currentInstance)
     end
 end
 

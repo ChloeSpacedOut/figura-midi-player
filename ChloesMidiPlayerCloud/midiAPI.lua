@@ -6,9 +6,6 @@ local midi = {}
 midi.song = {}
 midi.song.__index = midi.song
 
-midi.track = {}
-midi.track.__index = midi.track
-
 midi.channel = {}
 midi.channel.__index = midi.channel
 
@@ -109,8 +106,13 @@ function midi.song:getLoop()
     return self.loopState
 end
 
-function midi.song:setPost(func)
-    self.post = func
+function midi.song:setOnEnd(func)
+    self.onEnd = func
+    return self
+end
+
+function midi.song:setOnLoaded(func)
+    self.onLoaded = func
     return self
 end
 
@@ -178,16 +180,6 @@ function midi.song:remove()
         self.instance.songs[self.ID]:stop()
     end
     self.instance.songs[self.ID] = nil
-end
-
-function midi.track:new()
-    self = setmetatable({},midi.track)
-    self.sequenceIndex = 1
-    self.lastEventTime = 0
-    self.isEnded = false
-    self.trackLength = 0
-    self.sequence = {}
-    return self
 end
 
 function midi.channel:new(instance,ID)

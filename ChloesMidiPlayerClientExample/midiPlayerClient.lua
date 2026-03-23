@@ -1,5 +1,5 @@
 -- midi player client by chloespacedout
--- version 1.2
+-- version 1.3
 
 --#REGION global
 --#REGION setup
@@ -95,17 +95,18 @@ function events.tick()
     if not midiPlayer.hasMadeInstance then
         midiPlayer.midiAPI = world.avatarVars()[playerConfig.midiAvatar]
         if midiPlayer.midiAPI and midiPlayer.midiAPI.newInstance then
-            local player = world.getEntity(avatar:getUUID())
-            midiPlayer.instance = midiPlayer.midiAPI.newInstance(player:getName(),player)
+            midiPlayer.instance = midiPlayer.midiAPI.newInstance(player:getName(),player,avatar)
             midiPlayer.hasMadeInstance = true
+            if not midiPlayer.instance then 
+                if host:isHost() and actions.midiPlayer then
+                    actions.midiPlayer:setTitle("Midi Player\nERROR: Midi player avatar is not set to MAX permissions")
+                end
+                return
+            end
             midiPlayer.instance.volume = midiPlayer.volume
             if host:isHost() and actions.midiPlayer then
-                if midiPlayer.instance:getPermissionLevel() ~= "MAX" then
-                    actions.midiPlayer:setTitle("Midi Player\nERROR: Midi player avatar is not set to MAX permissions")
-                else
-                    actions.midiPlayer:setTitle("Midi Player")
+                actions.midiPlayer:setTitle("Midi Player")
                         :setOnLeftClick(function() action_wheel:setPage(midiPlayer.page) end)
-                end
             end
             midiPlayer.instance:setShouldKillInstance(function()
                 local isHostOffline = true
@@ -207,28 +208,24 @@ function events.tick()
             display:setText(text)
                 :setVisible(true)
         elseif midiPlayer.activeSong then
-            if midiPlayer.instance:getPermissionLevel() ~= "MAX" then
-                local text = songName .. "\n§d:music2: playing ▶" .. "\n§cMidi player avatar not set to MAX perm so could not play\nSet 'Midi Player Cloud' to MAX in 'disconnected avatars'"
-                display:setText(text)
-                    :setVisible(true)
-            elseif avatar:getPermissionLevel() ~= "MAX" then
-                local text = songName .. "\n§d:music2: playing ▶" .. "\n§cAvatar not set to MAX perm so could not play"
-                display:setText(text)
-                    :setVisible(true)
-            else
-                local text = songName .. "\n§d:music2: playing ▶" .. "\n§cSong not received on client so could not play"
-                display:setText(text)
-                    :setVisible(true)
-            end
+            local text = songName .. "\n§d:music2: playing ▶" .. "\n§cSong not received on client so could not play"
+            display:setText(text)
+                :setVisible(true)
         else
             display:setText()
                 :setVisible(false)
         end
     else
         if midiPlayer.activeSong then
-            local text = songName .. "\n§d:music2: playing ▶" .. "\n§cMidi player avatar not loaded so song could not play\nSet 'Midi Player Cloud' to MAX in 'disconnected avatars'"
-            display:setText(text)
-                :setVisible(true)
+            if avatar:getPermissionLevel() ~= "MAX" then
+                local text = songName .. "\n§d:music2: playing ▶" .. "\n§cAvatar not set to MAX perms so could not play"
+                display:setText(text)
+                    :setVisible(true)
+            else
+                local text = songName .. "\n§d:music2: playing ▶" .. "\n§cMidi player cloud either not loaded or set to MAX perms so song\ncould not play. Set 'Midi Player Cloud' to MAX in 'disconnected avatars'"
+                display:setText(text)
+                    :setVisible(true)
+            end
         else
             display:setText()
                 :setVisible(false)

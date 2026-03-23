@@ -44,14 +44,14 @@ local function progressMidi(instance,activeSong,sysTime,deltaTime)
     end
     if isSongEnded then
         if activeSong.loopState then
-            if activeSong.post then
-                activeSong:post(true)
+            if activeSong.onEnd then
+                activeSong:onEnd(true)
             end
             activeSong:stop()
             activeSong:play()
         else
-            if activeSong.post then
-                activeSong:post(false)
+            if activeSong.onEnd then
+                activeSong:onEnd(false)
             end
             activeSong:stop()
         end
