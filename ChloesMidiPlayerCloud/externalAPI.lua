@@ -1,5 +1,5 @@
 -- midi player cloud by chloespacedout
--- version 1.2
+-- version 1.3
 
 local midiPlayer = require("midiPlayer")
 local midiParser = require("midiParser")
@@ -23,6 +23,8 @@ function instance:new(ID,target)
     self.soundfont = soundfont
     self.lastSysTime = client.getSystemTime()
     self.lastUpdated = client.getSystemTime()
+    self.shouldKeepAlive = true
+    self.shouldKeepAliveClock = 0
     self.songs = {}
     self.tracks = {}
     self.channels = {}
@@ -36,8 +38,8 @@ function instance:remove()
             note:stop()
         end
     end
-    if self.activeSong then
-        self.songs[self.activeSong]:remove()
+    for _,song in pairs(self.songs) do
+        song:remove()
     end
     self.isRemoved = true
     midiPlayer.instances[self.ID] = nil
@@ -78,6 +80,12 @@ end
 
 function instance:setShouldKillInstance(func)
     self.shouldKillInstance = func
+    return self
+end
+
+function instance:keepAlive()
+    self.shouldKeepAlive = true
+    self.shouldKeepAliveClock = 0
     return self
 end
 
@@ -139,12 +147,20 @@ end
 
 function events.world_tick()
     for ID,currentInstance in pairs(midiPlayer.instances) do
+        local isInstanceAlive = true
         if currentInstance.shouldKillInstance then
             if currentInstance:shouldKillInstance() then
                 currentInstance:remove()
+                isInstanceAlive = false
             end
         end
-        midiParser.updateParser(currentInstance)
+        if isInstanceAlive then
+            midiParser.updateParser(currentInstance)
+            currentInstance.shouldKeepAliveClock = currentInstance.shouldKeepAliveClock + 1
+            if currentInstance.shouldKeepAliveClock > 20 then
+                currentInstance.shouldKeepAlive = false
+            end
+        end
     end
 end
 

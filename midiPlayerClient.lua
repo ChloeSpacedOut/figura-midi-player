@@ -1,5 +1,5 @@
 -- midi player client by chloespacedout
--- version 1.3
+-- version 1.4
 
 --#REGION global
 --#REGION setup
@@ -109,15 +109,11 @@ function events.tick()
                         :setOnLeftClick(function() action_wheel:setPage(midiPlayer.page) end)
             end
             midiPlayer.instance:setShouldKillInstance(function()
-                local isHostOffline = true
-                for _,playerName in pairs(client.getTabList().players) do
-                    if playerName == midiPlayer.owner then
-                        isHostOffline = false
-                    end
-                end
-                return isHostOffline
+                return not midiPlayer.instance.shouldKeepAlive
             end)
         end
+    elseif midiPlayer.instance then
+        midiPlayer.instance:keepAlive()
     end
 end
 --#ENDREGION
@@ -306,6 +302,7 @@ function midiPlayer.decompressProject:remove()
 end
 
 function events.tick()
+    if not midiPlayer.instance then return end
     for _,project in pairs(midiPlayer.decompressProjects) do
         local buffer = project.buffer
         project.currentChunk = project.currentChunk + 1
@@ -372,6 +369,11 @@ function pings.sendSong(ID,packetID,isLastPacket,data)
 end
 
 function pings.updateSong(ID,action)
+    if midiPlayer.instance and midiPlayer.activeSong ~= ID then
+        if midiPlayer.instance.songs[midiPlayer.activeSong] then
+            midiPlayer.instance.songs[midiPlayer.activeSong]:stop()
+        end
+    end
     if action == 1 then
         if avatar:getPermissionLevel() == "MAX" and midiPlayer.instance and midiPlayer.instance:getPermissionLevel() == "MAX" and midiPlayer.instance.songs[ID] then
             midiPlayer.instance.songs[ID]:play()
@@ -682,7 +684,7 @@ actions.localMode = midiPlayer.settings:newAction()
     :setTitle("toggle local mode")
     :setOnToggle(function(bool) 
         midiPlayer.localMode = bool
-        config:save("localMode",midiPlayer.localMode)
+        config:save("localMode", midiPlayer.localMode)
         if bool then
             actions.localMode:setItem(midiPlayer.getEmojiHead("folder","000"))
             actions.localMode:setHoverColor(vectors.hexToRGB("635122"))
