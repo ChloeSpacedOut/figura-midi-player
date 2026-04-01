@@ -63,7 +63,7 @@ function midi.song:play()
             track.sequenceIndex = 1
             track.lastEventTime = nil
         end
-        return self 
+        return self
     end
 end
 
@@ -173,7 +173,7 @@ function midi.song:load(speed)
 end
 
 function midi.song:remove()
-    if self.parseProject then   
+    if self.parseProject then
         self.parseProject:remove()
     end
     if self.instance.activeSong == self.ID then
@@ -207,7 +207,7 @@ function midi.note:play(instance,pitch,velocity,channelID,trackID,sysTime,pos)
     self = setmetatable({},midi.note)
     local track = instance.tracks[trackID]
     if not track then
-        instance.tracks[channelID] = {}
+        instance.tracks[trackID] = {}
     end
     if instance.tracks[trackID][pitch] then
         instance.tracks[trackID][pitch]:stop()
@@ -290,7 +290,7 @@ function midi.note:sustain()
         self.state = "RELEASED"
         return
     end
-    if self.state ~= "RELEASED" then 
+    if self.state ~= "RELEASED" then
         self.state = "SUSTAINING"
     end
     local template = self.instrument.template
@@ -305,7 +305,7 @@ function midi.note:sustain()
         end
         targetPos = self.instance.target:getPos()
     end
-    
+
     local soundID = template.."Sustain."..soundSample
     local channel = self.instance.channels[self.channel]
     if self.instrument.Main then
