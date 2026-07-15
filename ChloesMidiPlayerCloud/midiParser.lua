@@ -1,4 +1,5 @@
 local midiParser = {}
+local clientID = client.getViewer():getUUID()
 
 local function readBits(buffer,numBytes)
     local bufferPos = buffer:getPosition()
@@ -309,6 +310,9 @@ function midiParser.track:new()
 end
 
 local function exitParser(project)
+    local clientVars = world.avatarVars()[clientID]
+    local isWarnsDisabled = clientVars and clientVars.disableMidiWarns
+
     project.song.loaded = true
     if project.song.onLoaded then
         project.song:onLoaded()
@@ -317,13 +321,16 @@ local function exitParser(project)
     if project.shouldQueueSong then
         project.song:play()
     end
-    if #project.warns ~= 0 then
+    if #project.warns ~= 0 and (not isWarnsDisabled) then
         log("Warns created when parsing " .. project.ID,project.warns)
     end
     project:remove()
 end
 
 function midiParser.updateParser(instance)
+    local clientVars = world.avatarVars()[clientID]
+    local isWarnsDisabled = clientVars and clientVars.disableMidiWarns
+
     for _,project in pairs(instance.parseProjects) do
         local buffer = project.buffer
         if buffer:isClosed() then
@@ -349,7 +356,9 @@ function midiParser.updateParser(instance)
                     project.song.ticksPerFrame = bitsToNum(bits,0,7)
                 end
             else
-                log("Midi file header was invalid, cancled parsing " .. project.ID .. ". Recieved data: " .. fileHeader)
+                if not isWarnsDisabled then
+                    log("Midi file header was invalid, cancled parsing " .. project.ID .. ". Recieved data: " .. fileHeader)
+                end
                 project:remove()
                 return
             end

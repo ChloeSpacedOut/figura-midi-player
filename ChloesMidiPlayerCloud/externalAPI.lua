@@ -1,10 +1,12 @@
 -- midi player cloud by chloespacedout
--- version 1.4
+-- version 1.5
 
 local midiPlayer = require("midiPlayer")
 local midiParser = require("midiParser")
 local midi = require("midiAPI")
 local soundfont = require("soundfont")
+
+local clientID = client.getViewer():getUUID()
 
 nameplate.ALL:setText("Midi Player Cloud")
 
@@ -90,13 +92,17 @@ function instance:keepAlive()
 end
 
 local function newInstance(ID,target,avatarInstance)
+    local clientVars = world.avatarVars()[clientID]
+    local isWarnsDisabled = clientVars and clientVars.disableMidiWarns
     if (not ID) or (not tostring(ID)) then
+        if isWarnsDisabled then return end
         log("Could not create midi player cloud instance as ID was invalid or not provided")
         return
     end
     ID = tostring(ID)
     local isValidTarget = (type(target) == "PlayerAPI") or (type(target) == "BlockState") or (type(target) == "Vector3")
     if (not target) or (not isValidTarget) then
+        if isWarnsDisabled then return end
         log("Could not create midi player cloud instance as target was invalid or not provided")
         return
     end
@@ -107,21 +113,25 @@ local function newInstance(ID,target,avatarInstance)
         local isSuccessful = pcall(function()
             permissionLevel = avatar.getPermissionLevel(avatarInstance)
             avatarName = avatar.getName(avatarInstance)
-            avatarOwner = avatar:getEntityName()
+            avatarOwner = avatar.getEntityName(avatarInstance)
         end)
         if not isSuccessful then
+            if isWarnsDisabled then return end
             log("Could not create midi player cloud instance as avatar instance was invalid")
             return
         end
         if permissionLevel ~= "MAX" then
+            if isWarnsDisabled then return end
             log("Could not create midi player cloud instance as user \"" .. avatarOwner .. "\" with avatar \"" .. avatarName .. "\" is not set to MAX perms")
             return
         end
     else
+        if isWarnsDisabled then return end
         log("Could not create midi player cloud instance as avatar instance was invalid or not provided")
         return
     end
     if avatar:getPermissionLevel() ~= "MAX" then
+        if isWarnsDisabled then return end
         log("Could not create midi player cloud instance as midi player cloud is not set to MAX perms")
         return
     end
