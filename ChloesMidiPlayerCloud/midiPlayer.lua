@@ -29,7 +29,7 @@ local function progressMidi(instance,activeSong,sysTime,deltaTime)
                 if eventDeltaTime >= targetDelta then
                     local typeFunction = midi.events[activeTrack.sequence[i].type]
                     if instance.onMidiEvent then
-                        instance:onMidiEvent(activeTrack.sequence[i], activeTrack, trackID, activeSong)
+                        pcall(instance.onMidiEvent, instance, activeTrack.sequence[i], activeTrack, trackID, activeSong)
                     end
                     if typeFunction then
                         typeFunction(instance, activeTrack.sequence[i], sysTime, activeTrack, trackID, activeSong)

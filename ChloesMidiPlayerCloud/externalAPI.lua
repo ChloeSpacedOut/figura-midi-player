@@ -151,7 +151,8 @@ function events.world_tick()
     for ID,currentInstance in pairs(midiPlayer.instances) do
         local isInstanceAlive = true
         if currentInstance.shouldKillInstance then
-            if currentInstance:shouldKillInstance() then
+            local pcallSuccess, shouldKillResult = pcall(currentInstance.shouldKillInstance, currentInstance)
+            if (pcallSuccess and shouldKillResult) or not pcallSuccess then
                 currentInstance:remove()
                 isInstanceAlive = false
             end
