@@ -16,11 +16,13 @@ local midiPlayer = world.avatarVars()["c0cfded1-a213-47d5-8054-94437f4fb906"]
 Class map:
 	ChloesMidiPlayer
 	└── newInstance() -> ChloesMidiPlayer.Instance
-		└── newSong() -> ChloesMidiPlayer.Song
-			├──
-			└──
+		├── newSong() -> ChloesMidiPlayer.Song
+		└── midi -> ChloesMidiAPI
 
-TODO Annotate all string and table types. Unknowns are usually a number of an unknown type. nils should also be type checked as optional.
+	ChloesMidiAPI
+	├── song:new() -> ChloesMidiPlayer.Song
+	├── channel:new() -> ChloesMidiPlayer.Channel
+	└── note:play() -> ChloesMidiPlayer.Note
 
 --#ENDREGION]] --===============================================================================================================
 --#REGION ˚♡ ChloesMidiPlayer ♡˚
@@ -839,15 +841,20 @@ TODO Annotate all string and table types. Unknowns are usually a number of an un
 ---| "PAUSED"
 ---| "STOPPED"
 
---#ENDREGION --=================================================================================================================
---#REGION ˚♡ ChloesMidiPlayer.Instance ♡˚
---==============================================================================================================================
+---@alias ChloesMidiPlayer.Internal table # Internal table not intended for general use
+
+------------------------------------------------------------------------------------------------
+--#REGION ˚♡ ChloesMidiPlayer > Instance ♡˚
+------------------------------------------------------------------------------------------------
+
+---@class ChloesMidiAPI
+---@field song ChloesMidiAPI.Song
+---@field channel ChloesMidiAPI.Channel
+---@field note ChloesMidiAPI.Note
 
 ---Object returned after calling `<ChloesMidiPlayer>.newInstance()`.
----@class ChloesMidiPlayer.Instance: ChloesMidiPlayer.Instance.Methods, ChloesMidiPlayer.Instance.Fields
-
----@class ChloesMidiPlayer.Instance.Methods
----@field newSong fun(self: self, name: string, midiData: string): ChloesMidiPlayer.Song # Creates a new song.
+---@class ChloesMidiPlayer.Instance
+---@field newSong fun(self: self, ID: ChloesMidiPlayer.SongID, midiData: string): ChloesMidiPlayer.Song # Creates a new song.
 ---@field setTarget fun(self: self, target: ChloesMidiPlayer.Target): self # Sets the current instance target.
 ---@field getTarget fun(self: self): ChloesMidiPlayer.Target # Returns the current instance target.
 ---@field setVolume fun(self: self, volume: number): self # Sets the current instance volume. Range between 0 and 1, default is 1.
@@ -857,42 +864,34 @@ TODO Annotate all string and table types. Unknowns are usually a number of an un
 ---@field setShouldKillInstance fun(self: self, shouldKillInstanceFunction: ChloesMidiPlayer.shouldKillInstance.Function): self # Sets a function what will run every tick to check if the instance should be killed. Returned value determines if the instance will be killed or not.
 ---@field keepAlive fun(self: self): self # An optional function that by default does nothing other than set `<ChloesMidiPlayer.Instance>.shouldKeepAlive` to true. You can use this function alongside checking for `<ChloesMidiPlayer.Instance>.shouldKeepAlive` inside your `shouldKillInstance` to reliably kill your instance if your avatar unloads.
 ---@field remove fun(self: self) # Removes the current midi instance.
-
--- Fields explicitly defined in the :new() method
-
----@class ChloesMidiPlayer.Instance.Fields
 ---@field ID ChloesMidiPlayer.ID
----@field activeSong nil
+---@field activeSong ChloesMidiPlayer.SongID
 ---@field isRemoved boolean
 ---@field target ChloesMidiPlayer.Target
 ---@field volume number
 ---@field attenuation number
----@field midi ChloesMidiPlayer.Midi
+---@field midi ChloesMidiAPI
 ---@field soundfont table
 ---@field lastSysTime integer
 ---@field lastUpdated integer
 ---@field shouldKeepAlive boolean
 ---@field shouldKeepAliveClock integer
----@field songs table
----@field tracks ChloesMidiPlayer.Note[][]
----@field channels table[]
----@field parseProjects table
+---@field shouldKillInstance ChloesMidiPlayer.shouldKillInstance.Function?
+---@field songs table<ChloesMidiPlayer.SongID, ChloesMidiPlayer.Song>
+---@field tracks table
+---@field channels table
 
--- Fields which are defined elsewhere in the library
+---@alias ChloesMidiPlayer.onMidiEvent.Function fun(instance: ChloesMidiPlayer.Instance, midiEventData: ChloesMidiPlayer.Event, activeTrack: ChloesMidiPlayer.Track, trackID: integer, activeSong: ChloesMidiPlayer.Song) # TODO Double check
+---@alias ChloesMidiPlayer.shouldKillInstance.Function fun(): boolean? # TODO Double check
 
----@class ChloesMidiPlayer.Instance.Roaming
----@field shouldKillInstance ChloesMidiPlayer.shouldKillInstance.Function
+--#ENDREGION -----------------------------------------------------------------------------------
+--#REGION ˚♡ ChloesMidiPlayer > Song ♡˚
+------------------------------------------------------------------------------------------------
 
----@alias ChloesMidiPlayer.onMidiEvent.Function fun(instance: ChloesMidiPlayer.Instance, midiEventData: ChloesMidiPlayer.Event, activeTrack: ChloesMidiPlayer.Track, trackID: integer, activeSong: ChloesMidiPlayer.Song) # TODO
----@alias ChloesMidiPlayer.shouldKillInstance.Function fun(): boolean? # TODO
+---@class ChloesMidiAPI.Song
+---@field new fun(self: self, instance: ChloesMidiPlayer.Instance, ID: ChloesMidiPlayer.SongID, midiData: string): ChloesMidiPlayer.Song
 
---#ENDREGION --=================================================================================================================
---#REGION ˚♡ ChloesMidiPlayer.Song ♡˚
---==============================================================================================================================
-
----@class ChloesMidiPlayer.Song: ChloesMidiPlayer.Song.Methods, ChloesMidiPlayer.Song.Fields, ChloesMidiPlayer.Song.Roaming
-
----@class ChloesMidiPlayer.Song.Methods
+---@class ChloesMidiPlayer.Song
 ---@field play fun(self: self): self
 ---@field stop fun(self: self): self
 ---@field loop fun(self: self): self
@@ -907,14 +906,11 @@ TODO Annotate all string and table types. Unknowns are usually a number of an un
 ---@field pause fun(self: self): self
 ---@field load fun(self: self, speed: integer?): self
 ---@field remove fun(self: self)
-
--- Fields explicitly defined in the :new() method
-
----@class ChloesMidiPlayer.Song.Fields
----@field ID string
+---@field ID ChloesMidiPlayer.SongID
 ---@field instance ChloesMidiPlayer.Instance
 ---@field tracks table
 ---@field bakedQuarterNotes table
+---@field ticksPerQuarterNote integer?
 ---@field parseProject nil
 ---@field state ChloesMidiPlayer.State
 ---@field loopState boolean
@@ -928,12 +924,6 @@ TODO Annotate all string and table types. Unknowns are usually a number of an un
 ---@field clock unknown
 ---@field lengthQuarterNotes unknown
 ---@field rawSong string
-
--- Fields which are defined elsewhere in the library
-
----@class ChloesMidiPlayer.Song.Roaming
----@field parseProject table?
----@field ticksPerQuarterNote integer?
 ---@field time number?
 ---@field length number?
 ---@field lastSysTime integer?
@@ -941,25 +931,35 @@ TODO Annotate all string and table types. Unknowns are usually a number of an un
 ---@alias ChloesMidiPlayer.onEnd.Function function
 ---@alias ChloesMidiPlayer.onLoaded.Function function
 
---#ENDREGION --=================================================================================================================
---#REGION ˚♡ ChloesMidiPlayer.Track ♡˚
---==============================================================================================================================
+---@alias ChloesMidiPlayer.SongID string
 
----@class ChloesMidiPlayer.Track
----@field lastEventTime number
----@field trackLength number
----@field sequence table
----@field sequenceIndex integer
----@field eventStartPos integer
----@field length integer
----@field isEnded boolean
+--#ENDREGION -----------------------------------------------------------------------------------
+--#REGION ˚♡ ChloesMidiPlayer > Channel ♡˚
+------------------------------------------------------------------------------------------------
 
---#ENDREGION --=================================================================================================================
---#REGION ˚♡ ChloesMidiPlayer.Note ♡˚
---==============================================================================================================================
+---@class ChloesMidiAPI.Channel
+---@field new fun(self: self, instance: ChloesMidiPlayer.Instance, ID: ChloesMidiPlayer.ChannelID): ChloesMidiPlayer.Channel
+
+---@class ChloesMidiPlayer.Channel
+---@field remove fun(self: self)
+---@field ID ChloesMidiPlayer.ChannelID
+---@field instance ChloesMidiPlayer.Instance
+---@field instrument integer
+---@field pitchBend integer
+---@field rpnData ChloesMidiPlayer.Internal
+---@field pitchBendRange number
+---@field volume number
+
+---@alias ChloesMidiPlayer.ChannelID integer
+
+--#ENDREGION -----------------------------------------------------------------------------------
+--#REGION ˚♡ ChloesMidiPlayer > Note ♡˚
+------------------------------------------------------------------------------------------------
+
+---@class ChloesMidiAPI.Note
+---@field play fun(self: self, instance: ChloesMidiPlayer.Instance, pitch, velocity, channelID, trackID, sysTime, pos): ChloesMidiPlayer.Note
 
 ---@class ChloesMidiPlayer.Note
----@field play fun(self: self, instance: ChloesMidiPlayer.Instance, pitch: integer, velocity: number, channelID: integer, trackID: integer, systemTime: integer, position: Vector3): ChloesMidiPlayer.Note
 ---@field sustain fun(self: self): self
 ---@field release fun(self: self, systemTime: integer): ChloesMidiPlayer.Note
 ---@field stop fun(self: self)
@@ -972,7 +972,7 @@ TODO Annotate all string and table types. Unknowns are usually a number of an un
 ---@field duration number
 ---@field initTime integer
 ---@field state ChloesMidiPlayer.State
----@field channel integer
+---@field channel ChloesMidiPlayer.ChannelID
 ---@field sound Sound
 ---@field pos Vector3
 
@@ -980,24 +980,21 @@ TODO Annotate all string and table types. Unknowns are usually a number of an un
 ---@field deltaTime number
 ---@field type string
 
----@class ChloesMidiPlayer.Midi
----@field track ChloesMidiPlayer.Track
----@field note ChloesMidiPlayer.Note
----@field song ChloesMidiPlayer.Song
----@field events table
----@field channel table
+--#ENDREGION -----------------------------------------------------------------------------------
+--#REGION ˚♡ ChloesMidiPlayer > Track ♡˚
+------------------------------------------------------------------------------------------------
 
---#ENDREGION --=================================================================================================================
---#REGION ˚♡ ChloesMidiPlayer.Channel ♡˚
---==============================================================================================================================
+---@class ChloesMidiPlayer.Track
+---@field sequenceIndex integer
+---@field lastEventTime number
+---@field isEnded boolean
+---@field trackLength number
+---@field sequence table
+---@field eventStartPos integer?
+---@field length integer?
 
----@class ChloesMidiPlayer.Channel
----@field ID integer
----@field instance ChloesMidiPlayer.Instance
----@field instrument integer
----@field pitchBend integer
----@field rpnData table
----@field pitchBendRange number
----@field volume number
+---@alias ChloesMidiPlayer.TrackID string
+
+--#ENDREGION
 
 --#ENDREGION
