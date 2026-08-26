@@ -20,7 +20,7 @@ Class map:
 			├──
 			└──
 
-TODO Annotate all string and table types. Unknowns are usually a number of an unknown type.
+TODO Annotate all string and table types. Unknowns are usually a number of an unknown type. nils should also be type checked as optional.
 
 --#ENDREGION]] --===============================================================================================================
 --#REGION ˚♡ ChloesMidiPlayer ♡˚
@@ -858,23 +858,30 @@ TODO Annotate all string and table types. Unknowns are usually a number of an un
 ---@field keepAlive fun(self: self): self # An optional function that by default does nothing other than set `<ChloesMidiPlayer.Instance>.shouldKeepAlive` to true. You can use this function alongside checking for `<ChloesMidiPlayer.Instance>.shouldKeepAlive` inside your `shouldKillInstance` to reliably kill your instance if your avatar unloads.
 ---@field remove fun(self: self) # Removes the current midi instance.
 
+-- Fields explicitly defined in the :new() method
+
 ---@class ChloesMidiPlayer.Instance.Fields
----@field shouldKillInstance ChloesMidiPlayer.shouldKillInstance.Function
----@field attenuation number
----@field lastSysTime integer
----@field shouldKeepAliveClock integer
----@field channels table[]
----@field isRemoved boolean
----@field parseProjects table
----@field midi ChloesMidiPlayer.Midi
----@field lastUpdated integer
----@field tracks ChloesMidiPlayer.Note[][]
----@field volume number
 ---@field ID ChloesMidiPlayer.ID
+---@field activeSong nil
+---@field isRemoved boolean
 ---@field target ChloesMidiPlayer.Target
----@field shouldKeepAlive boolean
+---@field volume number
+---@field attenuation number
+---@field midi ChloesMidiPlayer.Midi
 ---@field soundfont table
+---@field lastSysTime integer
+---@field lastUpdated integer
+---@field shouldKeepAlive boolean
+---@field shouldKeepAliveClock integer
 ---@field songs table
+---@field tracks ChloesMidiPlayer.Note[][]
+---@field channels table[]
+---@field parseProjects table
+
+-- Fields which are defined elsewhere in the library
+
+---@class ChloesMidiPlayer.Instance.Roaming
+---@field shouldKillInstance ChloesMidiPlayer.shouldKillInstance.Function
 
 ---@alias ChloesMidiPlayer.onMidiEvent.Function fun(instance: ChloesMidiPlayer.Instance, midiEventData: ChloesMidiPlayer.Event, activeTrack: ChloesMidiPlayer.Track, trackID: integer, activeSong: ChloesMidiPlayer.Song) # TODO
 ---@alias ChloesMidiPlayer.shouldKillInstance.Function fun(): boolean? # TODO
