@@ -2,6 +2,10 @@
 --#REGION ˚♡ Documentation ♡˚
 --[[============================================================================================================================
 
+Disclaimer: Some annotations like those for midi parsing are intentionally left out
+
+
+
 This script provides type annotations for Chloe's Midi Player Cloud
 
 A language server, such as the one written by Sumneko for VSCode, must be installed for type annotations to work.
@@ -12,6 +16,8 @@ These annotations will not work out of the box. You must attach a @type annotati
 ---@type ChloesMidiPlayer
 local midiPlayer = world.avatarVars()["c0cfded1-a213-47d5-8054-94437f4fb906"]
 ```
+
+
 
 Class map:
 	ChloesMidiPlayer
