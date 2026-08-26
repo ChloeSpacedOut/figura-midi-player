@@ -881,7 +881,7 @@ Class map:
 ---@field tracks table<ChloesMidiPlayer.TrackID, table<ChloesMidiPlayer.Pitch, ChloesMidiPlayer.Note>>
 ---@field channels table<ChloesMidiPlayer.ChannelID, ChloesMidiPlayer.Channel>
 
----@alias ChloesMidiPlayer.onMidiEvent.Function fun(instance: ChloesMidiPlayer.Instance, midiEventData: ChloesMidiPlayer.MidiEvent, activeTrack: ChloesMidiPlayer.Track, trackID: ChloesMidiPlayer.TrackID, activeSong: ChloesMidiPlayer.Song)
+---@alias ChloesMidiPlayer.onMidiEvent.Function fun(instance: ChloesMidiPlayer.Instance, midiEventData: ChloesMidiPlayer.MidiEvent.Any, activeTrack: ChloesMidiPlayer.Track, trackID: ChloesMidiPlayer.TrackID, activeSong: ChloesMidiPlayer.Song)
 ---@alias ChloesMidiPlayer.shouldKillInstance.Function fun(): boolean?
 
 ---@alias ChloesMidiPlayer.Pitch integer
@@ -976,40 +976,6 @@ Class map:
 ---@field sound Sound
 ---@field pos Vector3?
 
----@class ChloesMidiPlayer.MidiEvent
----@field type ChloesMidiPlayer.MidiEventType
----@field key integer
----@field channel integer
----@field deltaTime number
----@field velocity number
-
----@alias ChloesMidiPlayer.MidiEventType
----| "sequenceNumber" `0x00` - Meta Event
----| "textEvent" `0x01` - Meta Event
----| "copyrightNotice" `0x02` - Meta Event
----| "sequenceOrTrackName" `0x03` - Meta Event
----| "instrumentName" `0x04` - Meta Event
----| "lyric" `0x05` - Meta Event
----| "marker" `0x06` - Meta Event
----| "cuePoint" `0x07` - Meta Event
----| "midiChannelPrefix" `0x20` - Meta Event
----| "endOfTrack"  `0x2F` - Meta Event
----| "setTempo" `0x51` - Meta Event
----| "smtpeOffset" `0x54` - Meta Event
----| "timeSignature" `0x58` - Meta Event
----| "keySignature" `0x59` - Meta Event
----| "sequencerSpecificMetaEvent" `0x7F` - Meta Event
----| "midPort" `0x21` - Meta Event
----| "noteOff" `0x8` - Voice Message
----| "noteOn" `0x9` - Voice Message
----| "polyphonicKeyPressure" `0xA` - Voice Message
----| "controllerChange" `0xB` - Voice Message
----| "programChange" `0xC` - Voice Message
----| "channelKeyPressure" `0xD` - Voice Message
----| "pitchBend" `0xE` - Voice Message
----| "sysEx" `0xF0` - Sysex Event
----| "sysExEscape" `0xF7` - Sysex Event
-
 --#ENDREGION -----------------------------------------------------------------------------------
 --#REGION ˚♡ ChloesMidiPlayer > Track ♡˚
 ------------------------------------------------------------------------------------------------
@@ -1024,6 +990,207 @@ Class map:
 ---@field length integer?
 
 ---@alias ChloesMidiPlayer.TrackID integer
+
+--#ENDREGION -----------------------------------------------------------------------------------
+--#REGION ˚♡ ChloesMidiPlayer > Midi Event ♡˚
+------------------------------------------------------------------------------------------------
+
+---@alias ChloesMidiPlayer.MidiEvent.Any
+---| ChloesMidiPlayer.MidiEvent.sequenceNumber
+---| ChloesMidiPlayer.MidiEvent.textEvent
+---| ChloesMidiPlayer.MidiEvent.copyrightNotice
+---| ChloesMidiPlayer.MidiEvent.sequenceOrTrackName
+---| ChloesMidiPlayer.MidiEvent.instrumentName
+---| ChloesMidiPlayer.MidiEvent.lyric
+---| ChloesMidiPlayer.MidiEvent.marker
+---| ChloesMidiPlayer.MidiEvent.cuePoint
+---| ChloesMidiPlayer.MidiEvent.midiChannelPrefix
+---| ChloesMidiPlayer.MidiEvent.endOfTrack
+---| ChloesMidiPlayer.MidiEvent.setTempo
+---| ChloesMidiPlayer.MidiEvent.smtpeOffset
+---| ChloesMidiPlayer.MidiEvent.timeSignature
+---| ChloesMidiPlayer.MidiEvent.keySignature
+---| ChloesMidiPlayer.MidiEvent.sequencerSpecificMetaEvent
+---| ChloesMidiPlayer.MidiEvent.midPort
+---| ChloesMidiPlayer.MidiEvent.noteOff
+---| ChloesMidiPlayer.MidiEvent.noteOn
+---| ChloesMidiPlayer.MidiEvent.polyphonicKeyPressure
+---| ChloesMidiPlayer.MidiEvent.controllerChange
+---| ChloesMidiPlayer.MidiEvent.programChange
+---| ChloesMidiPlayer.MidiEvent.channelKeyPressure
+---| ChloesMidiPlayer.MidiEvent.pitchBend
+---| ChloesMidiPlayer.MidiEvent.sysEx
+---| ChloesMidiPlayer.MidiEvent.sysExEscape
+
+---@class ChloesMidiPlayer.MidiEvent.sequenceNumber
+---@field type "sequenceNumber" `0x00`
+---@field deltaTime number
+---@field sequenceNumber integer
+
+---@class ChloesMidiPlayer.MidiEvent.textEvent
+---@field type "textEvent" `0x01`
+---@field deltaTime number
+---@field text string
+
+---@class ChloesMidiPlayer.MidiEvent.copyrightNotice
+---@field type "copyrightNotice" `0x02`
+---@field deltaTime number
+---@field text string
+
+---@class ChloesMidiPlayer.MidiEvent.sequenceOrTrackName
+---@field type "sequenceOrTrackName" `0x03`
+---@field deltaTime number
+---@field text string
+
+---@class ChloesMidiPlayer.MidiEvent.instrumentName
+---@field type "instrumentName" `0x04`
+---@field deltaTime number
+---@field text string
+
+---@class ChloesMidiPlayer.MidiEvent.lyric
+---@field type "lyric" `0x05`
+---@field deltaTime number
+---@field text string
+
+---@class ChloesMidiPlayer.MidiEvent.marker
+---@field type "marker" `0x06`
+---@field deltaTime number
+---@field text string
+
+---@class ChloesMidiPlayer.MidiEvent.cuePoint
+---@field type "cuePoint" `0x07`
+---@field deltaTime number
+---@field text string
+
+---@class ChloesMidiPlayer.MidiEvent.midiChannelPrefix
+---@field type "midiChannelPrefix" `0x20`
+---@field deltaTime number
+---@field channel integer
+
+---@class ChloesMidiPlayer.MidiEvent.endOfTrack
+---@field type "endOfTrack" `0x2F`
+---@field deltaTime number
+
+---@class ChloesMidiPlayer.MidiEvent.setTempo
+---@field type "setTempo" `0x51`
+---@field deltaTime number
+---@field tempo integer
+
+---@class ChloesMidiPlayer.MidiEvent.smtpeOffset
+---@field type "smtpeOffset" `0x54`
+---@field deltaTime number
+---@field hours integer
+---@field minutes integer
+---@field seconds integer
+---@field frames integer
+---@field fractionalFrame integer
+
+---@class ChloesMidiPlayer.MidiEvent.timeSignature
+---@field type "timeSignature" `0x58`
+---@field deltaTime number
+---@field numerator integer
+---@field denominator integer
+---@field clocksPerMetronomeTick integer
+---@field noOf32thsNotesPer24MidiClocks integer
+
+---@class ChloesMidiPlayer.MidiEvent.keySignature
+---@field type "keySignature" `0x59`
+---@field deltaTime number
+---@field noOfSharpsOrFlats integer
+---@field majorOrMinorKey integer
+
+---@class ChloesMidiPlayer.MidiEvent.sequencerSpecificMetaEvent
+---@field type "sequencerSpecificMetaEvent" `0x7F`
+---@field deltaTime number
+---@field data string
+
+---@class ChloesMidiPlayer.MidiEvent.midPort
+---@field type "midPort" `0x21`
+---@field deltaTime number
+---@field port integer
+
+---@class ChloesMidiPlayer.MidiEvent.noteOff
+---@field type "noteOff" `0x8`
+---@field deltaTime number
+---@field channel integer
+---@field key integer
+---@field velocity integer
+
+---@class ChloesMidiPlayer.MidiEvent.noteOn
+---@field type "noteOn" `0x9`
+---@field deltaTime number
+---@field channel integer
+---@field key integer
+---@field velocity integer
+
+---@class ChloesMidiPlayer.MidiEvent.polyphonicKeyPressure
+---@field type "polyphonicKeyPressure" `0xA`
+---@field deltaTime number
+---@field channel integer
+---@field key integer
+---@field pressure integer
+
+---@class ChloesMidiPlayer.MidiEvent.controllerChange
+---@field type "controllerChange" `0xB`
+---@field deltaTime number
+---@field channel integer
+---@field controllerNumber integer
+---@field controllerValue integer
+
+---@class ChloesMidiPlayer.MidiEvent.programChange
+---@field type "programChange" `0xC`
+---@field deltaTime number
+---@field channel integer
+---@field newProgramNumber integer
+
+---@class ChloesMidiPlayer.MidiEvent.channelKeyPressure
+---@field type "channelKeyPressure" `0xD`
+---@field deltaTime number
+---@field channel integer
+---@field channelPressureValue integer
+
+---@class ChloesMidiPlayer.MidiEvent.pitchBend
+---@field type "pitchBend" `0xE`
+---@field deltaTime number
+---@field channel integer
+---@field pitchBend integer
+
+---@class ChloesMidiPlayer.MidiEvent.sysEx
+---@field type "sysEx" `0xF0`
+---@field deltaTime number
+---@field data string
+
+---@class ChloesMidiPlayer.MidiEvent.sysExEscape
+---@field type "sysExEscape" `0xF7`
+---@field deltaTime number
+---@field data string
+
+---@alias ChloesMidiPlayer.MidiEventType
+---| "sequenceNumber" `0x00`
+---| "textEvent" `0x01`
+---| "copyrightNotice" `0x02`
+---| "sequenceOrTrackName" `0x03`
+---| "instrumentName" `0x04`
+---| "lyric" `0x05`
+---| "marker" `0x06`
+---| "cuePoint" `0x07`
+---| "midiChannelPrefix" `0x20`
+---| "endOfTrack" `0x2F`
+---| "setTempo" `0x51`
+---| "smtpeOffset" `0x54`
+---| "timeSignature" `0x58`
+---| "keySignature" `0x59`
+---| "sequencerSpecificMetaEvent" `0x7F`
+---| "midPort" `0x21`
+---| "noteOff" `0x8`
+---| "noteOn" `0x9`
+---| "polyphonicKeyPressure" `0xA`
+---| "controllerChange" `0xB`
+---| "programChange" `0xC`
+---| "channelKeyPressure" `0xD`
+---| "pitchBend" `0xE`
+---| "sysEx" `0xF0`
+---| "sysExEscape" `0xF7`
 
 --#ENDREGION
 
