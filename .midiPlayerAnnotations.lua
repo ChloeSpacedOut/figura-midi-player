@@ -29,6 +29,7 @@ Class map:
 --#REGION ˚♡ ChloesMidiPlayer ♡˚
 --==============================================================================================================================
 
+---[View source](https://github.com/ChloeSpacedOut/figura-midi-player/blob/cb417ba36452dc82fb8102b4cf7727d77ad20272/ChloesMidiPlayerCloud/externalAPI.lua#L180-L183)
 ---@class ChloesMidiPlayer
 ---@field getSound (fun(ID: ChloesMidiPlayer.SoundID): Sound)? # Returns a sound object from the midi player cloud avatar.
 ---@field listSounds (fun(): ChloesMidiPlayer.SoundID[])? # Returns a list of all custom sound names in the midi player cloud avatar.
@@ -842,18 +843,19 @@ Class map:
 ---| "PAUSED"
 ---| "STOPPED"
 
----@alias ChloesMidiPlayer.Internal table # Internal table not intended for general use
-
 --#ENDREGION --=================================================================================================================
 --#REGION ˚♡ ChloesMidiPlayer.Instance ♡˚
 --==============================================================================================================================
 
+---[View source](https://github.com/ChloeSpacedOut/figura-midi-player/blob/cb417ba36452dc82fb8102b4cf7727d77ad20272/ChloesMidiPlayerCloud/midiAPI.lua#L4-L13)
 ---@class ChloesMidiAPI
 ---@field song ChloesMidiAPI.Song
 ---@field channel ChloesMidiAPI.Channel
 ---@field note ChloesMidiAPI.Note
 
 ---Object returned after calling `<ChloesMidiPlayer>.newInstance()`.
+---
+---[View source](https://github.com/ChloeSpacedOut/figura-midi-player/blob/cb417ba36452dc82fb8102b4cf7727d77ad20272/ChloesMidiPlayerCloud/externalAPI.lua#L13-L92)
 ---@class ChloesMidiPlayer.Instance
 ---@field newSong fun(self: self, ID: ChloesMidiPlayer.SongID, midiData: string): ChloesMidiPlayer.Song # Creates a new song.
 ---@field setTarget fun(self: self, target: ChloesMidiPlayer.Target): self # Sets the current instance target.
@@ -891,9 +893,11 @@ Class map:
 --#REGION ˚♡ ChloesMidiPlayer.Song ♡˚
 --==============================================================================================================================
 
+---[View source](https://github.com/ChloeSpacedOut/figura-midi-player/blob/cb417ba36452dc82fb8102b4cf7727d77ad20272/ChloesMidiPlayerCloud/midiAPI.lua#L15-L183)
 ---@class ChloesMidiAPI.Song
 ---@field new fun(self: self, instance: ChloesMidiPlayer.Instance, ID: ChloesMidiPlayer.SongID, midiData: string): ChloesMidiPlayer.Song
 
+---[View source](https://github.com/ChloeSpacedOut/figura-midi-player/blob/cb417ba36452dc82fb8102b4cf7727d77ad20272/ChloesMidiPlayerCloud/midiAPI.lua#L15-L183)
 ---@class ChloesMidiPlayer.Song
 ---@field play fun(self: self): ChloesMidiPlayer.Song # Plays the song. If song is not loaded, will first load song then play it.
 ---@field stop fun(self: self): self # Stops the song.
@@ -911,8 +915,7 @@ Class map:
 ---@field remove fun(self: self) # Removes the song.
 ---@field ID ChloesMidiPlayer.SongID
 ---@field instance ChloesMidiPlayer.Instance
----@field tracks table
----@field bakedQuarterNotes table
+---@field tracks table<ChloesMidiPlayer.TrackID, table<ChloesMidiPlayer.Pitch, ChloesMidiPlayer.Note>>
 ---@field ticksPerQuarterNote integer
 ---@field state ChloesMidiPlayer.State
 ---@field loopState boolean
@@ -938,16 +941,17 @@ Class map:
 --#REGION ˚♡ ChloesMidiPlayer.Channel ♡˚
 --==============================================================================================================================
 
+---[View source](https://github.com/ChloeSpacedOut/figura-midi-player/blob/cb417ba36452dc82fb8102b4cf7727d77ad20272/ChloesMidiPlayerCloud/midiAPI.lua#L185-L204)
 ---@class ChloesMidiAPI.Channel
 ---@field new fun(self: self, instance: ChloesMidiPlayer.Instance, ID: ChloesMidiPlayer.ChannelID): ChloesMidiPlayer.Channel
 
+---[View source](https://github.com/ChloeSpacedOut/figura-midi-player/blob/cb417ba36452dc82fb8102b4cf7727d77ad20272/ChloesMidiPlayerCloud/midiAPI.lua#L185-L204)
 ---@class ChloesMidiPlayer.Channel
 ---@field remove fun(self: self)
 ---@field ID ChloesMidiPlayer.ChannelID
 ---@field instance ChloesMidiPlayer.Instance
 ---@field instrument integer
 ---@field pitchBend integer
----@field rpnData ChloesMidiPlayer.Internal
 ---@field pitchBendRange number
 ---@field volume number
 
@@ -957,9 +961,11 @@ Class map:
 --#REGION ˚♡ ChloesMidiPlayer.Note ♡˚
 --==============================================================================================================================
 
+---[View source](https://github.com/ChloeSpacedOut/figura-midi-player/blob/cb417ba36452dc82fb8102b4cf7727d77ad20272/ChloesMidiPlayerCloud/midiAPI.lua#L206-L341)
 ---@class ChloesMidiAPI.Note
 ---@field play fun(self: self, instance: ChloesMidiPlayer.Instance, pitch: ChloesMidiPlayer.Pitch, velocity: number, channel: ChloesMidiPlayer.ChannelID, track: ChloesMidiPlayer.TrackID, sysTime: integer, pos: Vector3?): ChloesMidiPlayer.Note # Creates a new note. Must be accessed through midi api. Position is optional.
 
+---[View source](https://github.com/ChloeSpacedOut/figura-midi-player/blob/cb417ba36452dc82fb8102b4cf7727d77ad20272/ChloesMidiPlayerCloud/midiAPI.lua#L206-L341)
 ---@class ChloesMidiPlayer.Note
 ---@field sustain fun(self: self): self # Switches a note to sustain mode. Is triggered automatically.
 ---@field release fun(self: self, systemTime: integer): ChloesMidiPlayer.Note # Releases a note. Released notes still exist and resonate.
@@ -967,7 +973,7 @@ Class map:
 ---@field track integer
 ---@field pitch ChloesMidiPlayer.Pitch
 ---@field soundPitch number
----@field instrument table
+---@field instrument ChloesMidiPlayer.Soundfont.SoundInstrument
 ---@field instance ChloesMidiPlayer.Instance
 ---@field velocity number
 ---@field duration number
@@ -981,12 +987,13 @@ Class map:
 --#REGION ˚♡ ChloesMidiPlayer.Track ♡˚
 --==============================================================================================================================
 
+---[View source](https://github.com/ChloeSpacedOut/figura-midi-player/blob/cb417ba36452dc82fb8102b4cf7727d77ad20272/ChloesMidiPlayerCloud/midiParser.lua#L299-L310)
 ---@class ChloesMidiPlayer.Track
 ---@field sequenceIndex integer
 ---@field lastEventTime number
 ---@field isEnded boolean
 ---@field trackLength number
----@field sequence table
+---@field sequence table<integer, ChloesMidiPlayer.MidiEvent.Any>
 ---@field eventStartPos integer?
 ---@field length integer?
 
@@ -996,6 +1003,7 @@ Class map:
 --#REGION ˚♡ ChloesMidiPlayer.MidiEvent ♡˚
 --==============================================================================================================================
 
+---[View source](https://github.com/ChloeSpacedOut/figura-midi-player/blob/cb417ba36452dc82fb8102b4cf7727d77ad20272/ChloesMidiPlayerCloud/midiParser.lua#L53-L262)
 ---@alias ChloesMidiPlayer.MidiEvent.Any
 ---| ChloesMidiPlayer.MidiEvent.sequenceNumber
 ---| ChloesMidiPlayer.MidiEvent.textEvent
@@ -1197,6 +1205,7 @@ Class map:
 --#REGION ˚♡ ChloesMidiPlayer.Soundfont ♡˚
 --==============================================================================================================================
 
+---[View source](https://github.com/ChloeSpacedOut/figura-midi-player/blob/cb417ba36452dc82fb8102b4cf7727d77ad20272/ChloesMidiPlayerCloud/soundfontPreprocessor.lua)
 ---@class ChloesMidiPlayer.Soundfont
 ---@field soundTree table<integer, ChloesMidiPlayer.Soundfont.SoundInstrument>
 ---@field soundDuration table<ChloesMidiPlayer.SoundID, number>
