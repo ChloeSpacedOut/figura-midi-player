@@ -17,7 +17,8 @@ Class map:
 	ChloesMidiPlayer
 	└── newInstance() -> ChloesMidiPlayer.Instance
 		├── newSong() -> ChloesMidiPlayer.Song
-		└── midi -> ChloesMidiAPI
+		├── midi -> ChloesMidiAPI
+		└── soundfont -> ChloesMidiPlayer.Soundfont
 
 	ChloesMidiAPI
 	├── song:new() -> ChloesMidiPlayer.Song
@@ -843,9 +844,9 @@ Class map:
 
 ---@alias ChloesMidiPlayer.Internal table # Internal table not intended for general use
 
-------------------------------------------------------------------------------------------------
---#REGION ˚♡ ChloesMidiPlayer > Instance ♡˚
-------------------------------------------------------------------------------------------------
+--#ENDREGION --=================================================================================================================
+--#REGION ˚♡ ChloesMidiPlayer.Instance ♡˚
+--==============================================================================================================================
 
 ---@class ChloesMidiAPI
 ---@field song ChloesMidiAPI.Song
@@ -870,8 +871,8 @@ Class map:
 ---@field target ChloesMidiPlayer.Target
 ---@field volume number
 ---@field attenuation number
----@field midi ChloesMidiAPI
----@field soundfont table
+---@field midi ChloesMidiAPI # Provides the midi API.
+---@field soundfont ChloesMidiPlayer.Soundfont # Provides instrument soundfont data.
 ---@field lastSysTime integer
 ---@field lastUpdated integer
 ---@field shouldKeepAlive boolean
@@ -886,28 +887,28 @@ Class map:
 
 ---@alias ChloesMidiPlayer.Pitch integer
 
---#ENDREGION -----------------------------------------------------------------------------------
---#REGION ˚♡ ChloesMidiPlayer > Song ♡˚
-------------------------------------------------------------------------------------------------
+--#ENDREGION --=================================================================================================================
+--#REGION ˚♡ ChloesMidiPlayer.Song ♡˚
+--==============================================================================================================================
 
 ---@class ChloesMidiAPI.Song
 ---@field new fun(self: self, instance: ChloesMidiPlayer.Instance, ID: ChloesMidiPlayer.SongID, midiData: string): ChloesMidiPlayer.Song
 
 ---@class ChloesMidiPlayer.Song
----@field play fun(self: self): self
----@field stop fun(self: self): self
----@field loop fun(self: self): self
----@field setLoop fun(self: self, state: boolean): self
----@field getLoop fun(self: self): boolean
----@field setOnEnd fun(self: self, onEndFunction: ChloesMidiPlayer.onEnd.Function): self
----@field setOnLoaded fun(self: self, onLoadedFunction: ChloesMidiPlayer.onLoaded.Function): self
----@field setSpeed fun(self: self, speed: number): self
----@field getSpeed fun(self: self): number
----@field setTime fun(self: self, quarterNote: number): self
----@field getTime fun(self: self): number
----@field pause fun(self: self): self
----@field load fun(self: self, speed: integer?): self
----@field remove fun(self: self)
+---@field play fun(self: self): ChloesMidiPlayer.Song # Plays the song. If song is not loaded, will first load song then play it.
+---@field stop fun(self: self): self # Stops the song.
+---@field loop fun(self: self): self # Sets the song to looping.
+---@field setLoop fun(self: self, state: boolean): self # Sets the state of if the song should loop.
+---@field getLoop fun(self: self): boolean # Gets the state of if the song should loop.
+---@field setOnEnd fun(self: self, onEndFunction: ChloesMidiPlayer.onEnd.Function): self # Sets a function what will run when a song reaches its end.
+---@field setOnLoaded fun(self: self, onLoadedFunction: ChloesMidiPlayer.onLoaded.Function): self # Sets a function what will run when a song finishes loading.
+---@field setSpeed fun(self: self, speed: number): self # Sets the speed the song will play.
+---@field getSpeed fun(self: self): number # Gets the speed the song will play.
+---@field setTime fun(self: self, quarterNote: number): self # Sets the time of the song in quarter notes.
+---@field getTime fun(self: self): number # Gets the current time of the song in quarter notes.
+---@field pause fun(self: self): self # Pauses the song.
+---@field load fun(self: self, speed: integer?): self # Loads (parses) the song.
+---@field remove fun(self: self) # Removes the song.
 ---@field ID ChloesMidiPlayer.SongID
 ---@field instance ChloesMidiPlayer.Instance
 ---@field tracks table
@@ -933,9 +934,9 @@ Class map:
 
 ---@alias ChloesMidiPlayer.SongID string
 
---#ENDREGION -----------------------------------------------------------------------------------
---#REGION ˚♡ ChloesMidiPlayer > Channel ♡˚
-------------------------------------------------------------------------------------------------
+--#ENDREGION --=================================================================================================================
+--#REGION ˚♡ ChloesMidiPlayer.Channel ♡˚
+--==============================================================================================================================
 
 ---@class ChloesMidiAPI.Channel
 ---@field new fun(self: self, instance: ChloesMidiPlayer.Instance, ID: ChloesMidiPlayer.ChannelID): ChloesMidiPlayer.Channel
@@ -952,17 +953,17 @@ Class map:
 
 ---@alias ChloesMidiPlayer.ChannelID integer
 
---#ENDREGION -----------------------------------------------------------------------------------
---#REGION ˚♡ ChloesMidiPlayer > Note ♡˚
-------------------------------------------------------------------------------------------------
+--#ENDREGION --=================================================================================================================
+--#REGION ˚♡ ChloesMidiPlayer.Note ♡˚
+--==============================================================================================================================
 
 ---@class ChloesMidiAPI.Note
----@field play fun(self: self, instance: ChloesMidiPlayer.Instance, pitch: ChloesMidiPlayer.Pitch, velocity: number, channel: ChloesMidiPlayer.ChannelID, track: ChloesMidiPlayer.TrackID, sysTime: integer, pos: Vector3?): ChloesMidiPlayer.Note
+---@field play fun(self: self, instance: ChloesMidiPlayer.Instance, pitch: ChloesMidiPlayer.Pitch, velocity: number, channel: ChloesMidiPlayer.ChannelID, track: ChloesMidiPlayer.TrackID, sysTime: integer, pos: Vector3?): ChloesMidiPlayer.Note # Creates a new note. Must be accessed through midi api. Position is optional.
 
 ---@class ChloesMidiPlayer.Note
----@field sustain fun(self: self): self
----@field release fun(self: self, systemTime: integer): ChloesMidiPlayer.Note
----@field stop fun(self: self)
+---@field sustain fun(self: self): self # Switches a note to sustain mode. Is triggered automatically.
+---@field release fun(self: self, systemTime: integer): ChloesMidiPlayer.Note # Releases a note. Released notes still exist and resonate.
+---@field stop fun(self: self) # Removes a note and kills all sounds.
 ---@field track integer
 ---@field pitch ChloesMidiPlayer.Pitch
 ---@field soundPitch number
@@ -976,9 +977,9 @@ Class map:
 ---@field sound Sound
 ---@field pos Vector3?
 
---#ENDREGION -----------------------------------------------------------------------------------
---#REGION ˚♡ ChloesMidiPlayer > Track ♡˚
-------------------------------------------------------------------------------------------------
+--#ENDREGION --=================================================================================================================
+--#REGION ˚♡ ChloesMidiPlayer.Track ♡˚
+--==============================================================================================================================
 
 ---@class ChloesMidiPlayer.Track
 ---@field sequenceIndex integer
@@ -991,9 +992,9 @@ Class map:
 
 ---@alias ChloesMidiPlayer.TrackID integer
 
---#ENDREGION -----------------------------------------------------------------------------------
---#REGION ˚♡ ChloesMidiPlayer > Midi Event ♡˚
-------------------------------------------------------------------------------------------------
+--#ENDREGION --=================================================================================================================
+--#REGION ˚♡ ChloesMidiPlayer.MidiEvent ♡˚
+--==============================================================================================================================
 
 ---@alias ChloesMidiPlayer.MidiEvent.Any
 ---| ChloesMidiPlayer.MidiEvent.sequenceNumber
@@ -1007,7 +1008,7 @@ Class map:
 ---| ChloesMidiPlayer.MidiEvent.midiChannelPrefix
 ---| ChloesMidiPlayer.MidiEvent.endOfTrack
 ---| ChloesMidiPlayer.MidiEvent.setTempo
----| ChloesMidiPlayer.MidiEvent.smtpeOffset
+---| ChloesMidiPlayer.MidiEvent.smpteOffset
 ---| ChloesMidiPlayer.MidiEvent.timeSignature
 ---| ChloesMidiPlayer.MidiEvent.keySignature
 ---| ChloesMidiPlayer.MidiEvent.sequencerSpecificMetaEvent
@@ -1076,8 +1077,8 @@ Class map:
 ---@field deltaTime number
 ---@field tempo integer
 
----@class ChloesMidiPlayer.MidiEvent.smtpeOffset
----@field type "smtpeOffset" `0x54`
+---@class ChloesMidiPlayer.MidiEvent.smpteOffset
+---@field type "smpteOffset" `0x54`
 ---@field deltaTime number
 ---@field hours integer
 ---@field minutes integer
@@ -1110,47 +1111,47 @@ Class map:
 ---@field port integer
 
 ---@class ChloesMidiPlayer.MidiEvent.noteOff
----@field type "noteOff" `0x8`
+---@field type "noteOff" `0x80-0x8F`
 ---@field deltaTime number
 ---@field channel integer
 ---@field key integer
 ---@field velocity integer
 
 ---@class ChloesMidiPlayer.MidiEvent.noteOn
----@field type "noteOn" `0x9`
+---@field type "noteOn" `0x90-0x9F`
 ---@field deltaTime number
 ---@field channel integer
 ---@field key integer
 ---@field velocity integer
 
 ---@class ChloesMidiPlayer.MidiEvent.polyphonicKeyPressure
----@field type "polyphonicKeyPressure" `0xA`
+---@field type "polyphonicKeyPressure" `0xA0-0xAF`
 ---@field deltaTime number
 ---@field channel integer
 ---@field key integer
 ---@field pressure integer
 
 ---@class ChloesMidiPlayer.MidiEvent.controllerChange
----@field type "controllerChange" `0xB`
+---@field type "controllerChange" `0xB0-0xBF`
 ---@field deltaTime number
 ---@field channel integer
 ---@field controllerNumber integer
 ---@field controllerValue integer
 
 ---@class ChloesMidiPlayer.MidiEvent.programChange
----@field type "programChange" `0xC`
+---@field type "programChange" `0xC0-0xCF`
 ---@field deltaTime number
 ---@field channel integer
 ---@field newProgramNumber integer
 
 ---@class ChloesMidiPlayer.MidiEvent.channelKeyPressure
----@field type "channelKeyPressure" `0xD`
+---@field type "channelKeyPressure" `0xD0-0xDF`
 ---@field deltaTime number
 ---@field channel integer
 ---@field channelPressureValue integer
 
 ---@class ChloesMidiPlayer.MidiEvent.pitchBend
----@field type "pitchBend" `0xE`
+---@field type "pitchBend" `0xE0-0xEF`
 ---@field deltaTime number
 ---@field channel integer
 ---@field pitchBend integer
@@ -1177,21 +1178,39 @@ Class map:
 ---| "midiChannelPrefix" `0x20`
 ---| "endOfTrack" `0x2F`
 ---| "setTempo" `0x51`
----| "smtpeOffset" `0x54`
+---| "smpteOffset" `0x54`
 ---| "timeSignature" `0x58`
 ---| "keySignature" `0x59`
 ---| "sequencerSpecificMetaEvent" `0x7F`
 ---| "midPort" `0x21`
----| "noteOff" `0x8`
----| "noteOn" `0x9`
----| "polyphonicKeyPressure" `0xA`
----| "controllerChange" `0xB`
----| "programChange" `0xC`
----| "channelKeyPressure" `0xD`
----| "pitchBend" `0xE`
+---| "noteOff" `0x80-0x8F`
+---| "noteOn" `0x90-0x9F`
+---| "polyphonicKeyPressure" `0xA0-0xAF`
+---| "controllerChange" `0xB0-0xBF`
+---| "programChange" `0xC0-0xCF`
+---| "channelKeyPressure" `0xD0-0xDF`
+---| "pitchBend" `0xE0-0xEF`
 ---| "sysEx" `0xF0`
 ---| "sysExEscape" `0xF7`
 
---#ENDREGION
+--#ENDREGION --=================================================================================================================
+--#REGION ˚♡ ChloesMidiPlayer.Soundfont ♡˚
+--==============================================================================================================================
+
+---@class ChloesMidiPlayer.Soundfont
+---@field soundTree table<integer, ChloesMidiPlayer.Soundfont.SoundInstrument>
+---@field soundDuration table<ChloesMidiPlayer.SoundID, number>
+---@field instruments ChloesMidiPlayer.Soundfont.Instrument[]
+---@field redundancyMappings integer[]
+---@field redundancyNames string[]
+
+---@alias ChloesMidiPlayer.Soundfont.Instrument {sustain: number, resonance: number, minVol: number}
+---@alias ChloesMidiPlayer.Soundfont.SoundInstrument {template: string, index: integer, Sustain: ChloesMidiPlayer.Soundfont.SoundData, Main: ChloesMidiPlayer.Soundfont.SoundData}
+
+---@class ChloesMidiPlayer.Soundfont.SoundData: ChloesMidiPlayer.Soundfont.SoundData.Index
+---@field notes integer[]
+---@class ChloesMidiPlayer.Soundfont.SoundData.Index
+---@field [string] ChloesMidiPlayer.Soundfont.SoundData.Extra
+---@alias ChloesMidiPlayer.Soundfont.SoundData.Extra {sample: integer, pitch: number}
 
 --#ENDREGION
