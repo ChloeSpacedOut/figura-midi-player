@@ -10,7 +10,7 @@ Sumneko's Lua Language Server: https://open-vsx.org/vscode/item?itemName=sumneko
 These annotations will not work out of the box. You must attach a @type annotation to the returned avatar vars:
 ```lua
 ---@type ChloesMidiPlayer
-local player = world.avatarVars()["c0cfded1-a213-47d5-8054-94437f4fb906"]
+local midiPlayer = world.avatarVars()["c0cfded1-a213-47d5-8054-94437f4fb906"]
 ```
 
 Class map:
