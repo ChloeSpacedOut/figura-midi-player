@@ -37,803 +37,803 @@ Class map:
 ---@alias ChloesMidiPlayer.ID string # The instance ID.
 ---@alias ChloesMidiPlayer.Target Entity.any|BlockTask|Vector3 # The instance target, or where midi player sounds are heard from.
 ---@alias ChloesMidiPlayer.SoundID # List of all sound IDs that can be returned from the `<ChloesMidiPlayer>.getSound()` function.
----| "samples.001. Acoustic Grand Piano.Main.36",
----| "samples.001. Acoustic Grand Piano.Main.41",
----| "samples.001. Acoustic Grand Piano.Main.48",
----| "samples.001. Acoustic Grand Piano.Main.56",
----| "samples.001. Acoustic Grand Piano.Main.64",
----| "samples.001. Acoustic Grand Piano.Main.73",
----| "samples.001. Acoustic Grand Piano.Main.78",
----| "samples.001. Acoustic Grand Piano.Main.84",
----| "samples.001. Acoustic Grand Piano.Main.92",
----| "samples.001. Acoustic Grand Piano.Main.103",
----| "samples.001. Acoustic Grand Piano.Sustain.36",
----| "samples.001. Acoustic Grand Piano.Sustain.41",
----| "samples.001. Acoustic Grand Piano.Sustain.48",
----| "samples.001. Acoustic Grand Piano.Sustain.56",
----| "samples.001. Acoustic Grand Piano.Sustain.64",
----| "samples.001. Acoustic Grand Piano.Sustain.73",
----| "samples.001. Acoustic Grand Piano.Sustain.78",
----| "samples.001. Acoustic Grand Piano.Sustain.84",
----| "samples.001. Acoustic Grand Piano.Sustain.92",
----| "samples.001. Acoustic Grand Piano.Sustain.103",
----| "samples.004. Honky-tonk Piano.Main.42",
----| "samples.004. Honky-tonk Piano.Main.62",
----| "samples.004. Honky-tonk Piano.Main.71",
----| "samples.004. Honky-tonk Piano.Main.84",
----| "samples.004. Honky-tonk Piano.Main.96",
----| "samples.004. Honky-tonk Piano.Sustain.42",
----| "samples.004. Honky-tonk Piano.Sustain.62",
----| "samples.004. Honky-tonk Piano.Sustain.71",
----| "samples.004. Honky-tonk Piano.Sustain.84",
----| "samples.004. Honky-tonk Piano.Sustain.96",
----| "samples.005. Electric Piano 1 (Rhodes Piano).Sustain.49",
----| "samples.005. Electric Piano 1 (Rhodes Piano).Sustain.56",
----| "samples.005. Electric Piano 1 (Rhodes Piano).Sustain.67",
----| "samples.005. Electric Piano 1 (Rhodes Piano).Sustain.80",
----| "samples.005. Electric Piano 1 (Rhodes Piano).Sustain.97",
----| "samples.006. Electric Piano 2 (Chorused Piano).Main.48",
----| "samples.006. Electric Piano 2 (Chorused Piano).Main.56",
----| "samples.006. Electric Piano 2 (Chorused Piano).Main.64",
----| "samples.006. Electric Piano 2 (Chorused Piano).Main.72",
----| "samples.006. Electric Piano 2 (Chorused Piano).Main.80",
----| "samples.006. Electric Piano 2 (Chorused Piano).Main.88",
----| "samples.006. Electric Piano 2 (Chorused Piano).Main.96",
----| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.48",
----| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.56",
----| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.64",
----| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.72",
----| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.80",
----| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.88",
----| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.96",
----| "samples.007. Harpsichord.Main.48",
----| "samples.007. Harpsichord.Main.60",
----| "samples.007. Harpsichord.Main.72",
----| "samples.007. Harpsichord.Main.87",
----| "samples.007. Harpsichord.Sustain.48",
----| "samples.007. Harpsichord.Sustain.60",
----| "samples.007. Harpsichord.Sustain.72",
----| "samples.007. Harpsichord.Sustain.87",
----| "samples.008. Clavinet.Sustain.48",
----| "samples.008. Clavinet.Sustain.60",
----| "samples.008. Clavinet.Sustain.72",
----| "samples.008. Clavinet.Sustain.84",
----| "samples.008. Clavinet.Sustain.96",
----| "samples.009. Celesta.Main.77",
----| "samples.009. Celesta.Main.90",
----| "samples.009. Celesta.Main.101",
----| "samples.009. Celesta.Sustain.77",
----| "samples.009. Celesta.Sustain.90",
----| "samples.009. Celesta.Sustain.101",
----| "samples.010. Glockenspiel.Main.65",
----| "samples.010. Glockenspiel.Main.77",
----| "samples.010. Glockenspiel.Main.89",
----| "samples.010. Glockenspiel.Sustain.65",
----| "samples.010. Glockenspiel.Sustain.77",
----| "samples.010. Glockenspiel.Sustain.89",
----| "samples.011. Music Box.Main.82",
----| "samples.011. Music Box.Sustain.82",
----| "samples.012. Vibraphone.Main.52",
----| "samples.012. Vibraphone.Main.64",
----| "samples.012. Vibraphone.Main.76",
----| "samples.012. Vibraphone.Main.88",
----| "samples.012. Vibraphone.Main.100",
----| "samples.012. Vibraphone.Sustain.52",
----| "samples.012. Vibraphone.Sustain.64",
----| "samples.012. Vibraphone.Sustain.76",
----| "samples.012. Vibraphone.Sustain.88",
----| "samples.012. Vibraphone.Sustain.100",
----| "samples.013. Marimba.Main.54",
----| "samples.013. Marimba.Main.62",
----| "samples.013. Marimba.Sustain.54",
----| "samples.013. Marimba.Sustain.62",
----| "samples.014. Xylophone.Main.72",
----| "samples.014. Xylophone.Main.82",
----| "samples.014. Xylophone.Main.93",
----| "samples.015. Tubular Bells.Main.84",
----| "samples.015. Tubular Bells.Sustain.84",
----| "samples.016. Dulcimer (Santur).Main.74",
----| "samples.016. Dulcimer (Santur).Sustain.74",
----| "samples.017. Drawbar Organ (Hammond).Sustain.73",
----| "samples.017. Drawbar Organ (Hammond).Sustain.85",
----| "samples.017. Drawbar Organ (Hammond).Sustain.97",
----| "samples.018. Percussive Organ.Main.53",
----| "samples.018. Percussive Organ.Main.68",
----| "samples.018. Percussive Organ.Main.86",
----| "samples.018. Percussive Organ.Sustain.53",
----| "samples.018. Percussive Organ.Sustain.68",
----| "samples.018. Percussive Organ.Sustain.86",
----| "samples.019. Rock Organ.Main.71",
----| "samples.019. Rock Organ.Main.83",
----| "samples.019. Rock Organ.Main.95",
----| "samples.019. Rock Organ.Sustain.71",
----| "samples.019. Rock Organ.Sustain.83",
----| "samples.019. Rock Organ.Sustain.95",
----| "samples.020. Church Organ.Main.36",
----| "samples.020. Church Organ.Main.48",
----| "samples.020. Church Organ.Main.60",
----| "samples.020. Church Organ.Main.72",
----| "samples.020. Church Organ.Main.84",
----| "samples.020. Church Organ.Sustain.36",
----| "samples.020. Church Organ.Sustain.48",
----| "samples.020. Church Organ.Sustain.60",
----| "samples.020. Church Organ.Sustain.72",
----| "samples.020. Church Organ.Sustain.84",
----| "samples.021. Reed Organ.Main.53",
----| "samples.021. Reed Organ.Main.72",
----| "samples.021. Reed Organ.Main.88",
----| "samples.021. Reed Organ.Sustain.53",
----| "samples.021. Reed Organ.Sustain.72",
----| "samples.021. Reed Organ.Sustain.88",
----| "samples.022. Accordion (French).Main.68",
----| "samples.022. Accordion (French).Main.83",
----| "samples.022. Accordion (French).Main.96",
----| "samples.022. Accordion (French).Sustain.68",
----| "samples.022. Accordion (French).Sustain.83",
----| "samples.022. Accordion (French).Sustain.96",
----| "samples.023. Harmonica.Main.56",
----| "samples.023. Harmonica.Main.64",
----| "samples.023. Harmonica.Main.72",
----| "samples.023. Harmonica.Main.80",
----| "samples.023. Harmonica.Main.88",
----| "samples.023. Harmonica.Main.96",
----| "samples.023. Harmonica.Sustain.56",
----| "samples.023. Harmonica.Sustain.64",
----| "samples.023. Harmonica.Sustain.72",
----| "samples.023. Harmonica.Sustain.80",
----| "samples.023. Harmonica.Sustain.88",
----| "samples.023. Harmonica.Sustain.96",
----| "samples.024. Tango Accordion (Band neon).Main.64",
----| "samples.024. Tango Accordion (Band neon).Main.74",
----| "samples.024. Tango Accordion (Band neon).Sustain.64",
----| "samples.024. Tango Accordion (Band neon).Sustain.74",
----| "samples.025. Acoustic Guitar (nylon).Main.48",
----| "samples.025. Acoustic Guitar (nylon).Main.57",
----| "samples.025. Acoustic Guitar (nylon).Main.70",
----| "samples.025. Acoustic Guitar (nylon).Main.79",
----| "samples.025. Acoustic Guitar (nylon).Main.88",
----| "samples.025. Acoustic Guitar (nylon).Main.97",
----| "samples.025. Acoustic Guitar (nylon).Main.101",
----| "samples.025. Acoustic Guitar (nylon).Sustain.48",
----| "samples.025. Acoustic Guitar (nylon).Sustain.57",
----| "samples.025. Acoustic Guitar (nylon).Sustain.70",
----| "samples.025. Acoustic Guitar (nylon).Sustain.79",
----| "samples.025. Acoustic Guitar (nylon).Sustain.88",
----| "samples.025. Acoustic Guitar (nylon).Sustain.97",
----| "samples.025. Acoustic Guitar (nylon).Sustain.101",
----| "samples.026. Acoustic Guitar (steel).Main.41",
----| "samples.026. Acoustic Guitar (steel).Main.49",
----| "samples.026. Acoustic Guitar (steel).Main.57",
----| "samples.026. Acoustic Guitar (steel).Main.65",
----| "samples.026. Acoustic Guitar (steel).Main.74",
----| "samples.026. Acoustic Guitar (steel).Main.84",
----| "samples.026. Acoustic Guitar (steel).Sustain.41",
----| "samples.026. Acoustic Guitar (steel).Sustain.49",
----| "samples.026. Acoustic Guitar (steel).Sustain.57",
----| "samples.026. Acoustic Guitar (steel).Sustain.65",
----| "samples.026. Acoustic Guitar (steel).Sustain.74",
----| "samples.026. Acoustic Guitar (steel).Sustain.84",
----| "samples.027. Electric Guitar (jazz).Main.50",
----| "samples.027. Electric Guitar (jazz).Main.59",
----| "samples.027. Electric Guitar (jazz).Main.68",
----| "samples.027. Electric Guitar (jazz).Main.74",
----| "samples.027. Electric Guitar (jazz).Main.84",
----| "samples.027. Electric Guitar (jazz).Main.93",
----| "samples.027. Electric Guitar (jazz).Sustain.50",
----| "samples.027. Electric Guitar (jazz).Sustain.59",
----| "samples.027. Electric Guitar (jazz).Sustain.68",
----| "samples.027. Electric Guitar (jazz).Sustain.74",
----| "samples.027. Electric Guitar (jazz).Sustain.84",
----| "samples.027. Electric Guitar (jazz).Sustain.93",
----| "samples.028. Electric Guitar (clean).Main.48",
----| "samples.028. Electric Guitar (clean).Main.60",
----| "samples.028. Electric Guitar (clean).Main.67",
----| "samples.028. Electric Guitar (clean).Main.72",
----| "samples.028. Electric Guitar (clean).Main.83",
----| "samples.028. Electric Guitar (clean).Sustain.48",
----| "samples.028. Electric Guitar (clean).Sustain.60",
----| "samples.028. Electric Guitar (clean).Sustain.67",
----| "samples.028. Electric Guitar (clean).Sustain.72",
----| "samples.028. Electric Guitar (clean).Sustain.83",
----| "samples.029. Electric Guitar (muted).Main.43",
----| "samples.029. Electric Guitar (muted).Main.64",
----| "samples.029. Electric Guitar (muted).Main.81",
----| "samples.029. Electric Guitar (muted).Sustain.43",
----| "samples.029. Electric Guitar (muted).Sustain.64",
----| "samples.029. Electric Guitar (muted).Sustain.81",
----| "samples.030. Overdriven Guitar.Main.32",
----| "samples.030. Overdriven Guitar.Main.40",
----| "samples.030. Overdriven Guitar.Main.48",
----| "samples.030. Overdriven Guitar.Main.60",
----| "samples.030. Overdriven Guitar.Main.69",
----| "samples.030. Overdriven Guitar.Main.79",
----| "samples.030. Overdriven Guitar.Main.86",
----| "samples.030. Overdriven Guitar.Main.94",
----| "samples.030. Overdriven Guitar.Sustain.32",
----| "samples.030. Overdriven Guitar.Sustain.40",
----| "samples.030. Overdriven Guitar.Sustain.48",
----| "samples.030. Overdriven Guitar.Sustain.60",
----| "samples.030. Overdriven Guitar.Sustain.69",
----| "samples.030. Overdriven Guitar.Sustain.79",
----| "samples.030. Overdriven Guitar.Sustain.86",
----| "samples.030. Overdriven Guitar.Sustain.94",
----| "samples.031. Distortion Guitar.Main.36",
----| "samples.031. Distortion Guitar.Main.42",
----| "samples.031. Distortion Guitar.Main.47",
----| "samples.031. Distortion Guitar.Main.52",
----| "samples.031. Distortion Guitar.Main.59",
----| "samples.031. Distortion Guitar.Main.65",
----| "samples.031. Distortion Guitar.Main.72",
----| "samples.031. Distortion Guitar.Main.80",
----| "samples.031. Distortion Guitar.Main.89",
----| "samples.031. Distortion Guitar.Main.97",
----| "samples.031. Distortion Guitar.Sustain.36",
----| "samples.031. Distortion Guitar.Sustain.42",
----| "samples.031. Distortion Guitar.Sustain.47",
----| "samples.031. Distortion Guitar.Sustain.52",
----| "samples.031. Distortion Guitar.Sustain.59",
----| "samples.031. Distortion Guitar.Sustain.65",
----| "samples.031. Distortion Guitar.Sustain.72",
----| "samples.031. Distortion Guitar.Sustain.80",
----| "samples.031. Distortion Guitar.Sustain.89",
----| "samples.031. Distortion Guitar.Sustain.97",
----| "samples.032. Guitar harmonics.Main.52",
----| "samples.032. Guitar harmonics.Main.82",
----| "samples.032. Guitar harmonics.Sustain.52",
----| "samples.032. Guitar harmonics.Sustain.82",
----| "samples.033. Acoustic Bass.Main.32",
----| "samples.033. Acoustic Bass.Main.43",
----| "samples.033. Acoustic Bass.Main.60",
----| "samples.033. Acoustic Bass.Main.83",
----| "samples.033. Acoustic Bass.Main.96",
----| "samples.033. Acoustic Bass.Sustain.32",
----| "samples.033. Acoustic Bass.Sustain.43",
----| "samples.033. Acoustic Bass.Sustain.60",
----| "samples.033. Acoustic Bass.Sustain.83",
----| "samples.033. Acoustic Bass.Sustain.96",
----| "samples.034. Electric Bass (fingered).Main.56",
----| "samples.034. Electric Bass (fingered).Main.67",
----| "samples.034. Electric Bass (fingered).Main.76",
----| "samples.034. Electric Bass (fingered).Sustain.56",
----| "samples.034. Electric Bass (fingered).Sustain.67",
----| "samples.034. Electric Bass (fingered).Sustain.76",
----| "samples.035. Electric Bass (picked).Main.30",
----| "samples.035. Electric Bass (picked).Main.40",
----| "samples.035. Electric Bass (picked).Main.50",
----| "samples.035. Electric Bass (picked).Sustain.30",
----| "samples.035. Electric Bass (picked).Sustain.40",
----| "samples.035. Electric Bass (picked).Sustain.50",
----| "samples.036. Fretless Bass.Main.36",
----| "samples.036. Fretless Bass.Main.48",
----| "samples.036. Fretless Bass.Main.60",
----| "samples.036. Fretless Bass.Sustain.36",
----| "samples.036. Fretless Bass.Sustain.48",
----| "samples.036. Fretless Bass.Sustain.60",
----| "samples.037. Slap Bass 1.Main.31",
----| "samples.037. Slap Bass 1.Main.43",
----| "samples.037. Slap Bass 1.Main.84",
----| "samples.037. Slap Bass 1.Sustain.31",
----| "samples.037. Slap Bass 1.Sustain.43",
----| "samples.037. Slap Bass 1.Sustain.84",
----| "samples.038. Slap Bass 2.Main.52",
----| "samples.038. Slap Bass 2.Sustain.52",
----| "samples.039. Synth Bass 1.Main.33",
----| "samples.039. Synth Bass 1.Main.48",
----| "samples.039. Synth Bass 1.Main.72",
----| "samples.039. Synth Bass 1.Main.96",
----| "samples.039. Synth Bass 1.Sustain.33",
----| "samples.039. Synth Bass 1.Sustain.48",
----| "samples.039. Synth Bass 1.Sustain.72",
----| "samples.039. Synth Bass 1.Sustain.96",
----| "samples.040. Synth Bass 2.Main.33",
----| "samples.040. Synth Bass 2.Main.48",
----| "samples.040. Synth Bass 2.Main.72",
----| "samples.040. Synth Bass 2.Sustain.33",
----| "samples.040. Synth Bass 2.Sustain.48",
----| "samples.040. Synth Bass 2.Sustain.72",
----| "samples.041. Violin.Main.56",
----| "samples.041. Violin.Main.60",
----| "samples.041. Violin.Main.64",
----| "samples.041. Violin.Main.69",
----| "samples.041. Violin.Main.74",
----| "samples.041. Violin.Main.83",
----| "samples.041. Violin.Main.92",
----| "samples.041. Violin.Sustain.56",
----| "samples.041. Violin.Sustain.60",
----| "samples.041. Violin.Sustain.64",
----| "samples.041. Violin.Sustain.69",
----| "samples.041. Violin.Sustain.74",
----| "samples.041. Violin.Sustain.83",
----| "samples.041. Violin.Sustain.92",
----| "samples.043. Cello.Main.28",
----| "samples.043. Cello.Main.53",
----| "samples.043. Cello.Main.64",
----| "samples.043. Cello.Main.76",
----| "samples.043. Cello.Sustain.28",
----| "samples.043. Cello.Sustain.53",
----| "samples.043. Cello.Sustain.64",
----| "samples.043. Cello.Sustain.76",
----| "samples.044. Contrabass.Main.29",
----| "samples.044. Contrabass.Main.42",
----| "samples.044. Contrabass.Main.59",
----| "samples.044. Contrabass.Sustain.29",
----| "samples.044. Contrabass.Sustain.42",
----| "samples.044. Contrabass.Sustain.59",
----| "samples.045. Tremolo Strings.Sustain.57",
----| "samples.045. Tremolo Strings.Sustain.71",
----| "samples.045. Tremolo Strings.Sustain.88",
----| "samples.046. Pizzicato Strings.Main.71",
----| "samples.046. Pizzicato Strings.Main.83",
----| "samples.046. Pizzicato Strings.Main.95",
----| "samples.047. Orchestral Harp.Main.57",
----| "samples.047. Orchestral Harp.Main.70",
----| "samples.047. Orchestral Harp.Sustain.57",
----| "samples.047. Orchestral Harp.Sustain.70",
----| "samples.048. Timpani.Main.56",
----| "samples.049. String Ensemble 1.Main.48",
----| "samples.049. String Ensemble 1.Main.69",
----| "samples.049. String Ensemble 1.Main.86",
----| "samples.049. String Ensemble 1.Sustain.48",
----| "samples.049. String Ensemble 1.Sustain.69",
----| "samples.049. String Ensemble 1.Sustain.86",
----| "samples.050. String Ensemble 2.Main.48",
----| "samples.050. String Ensemble 2.Main.69",
----| "samples.050. String Ensemble 2.Main.86",
----| "samples.050. String Ensemble 2.Sustain.48",
----| "samples.050. String Ensemble 2.Sustain.69",
----| "samples.050. String Ensemble 2.Sustain.86",
----| "samples.051. SynthStrings 1.Main.48",
----| "samples.051. SynthStrings 1.Main.69",
----| "samples.051. SynthStrings 1.Main.86",
----| "samples.051. SynthStrings 1.Sustain.48",
----| "samples.051. SynthStrings 1.Sustain.69",
----| "samples.051. SynthStrings 1.Sustain.86",
----| "samples.053. Choir Aahs.Main.68",
----| "samples.053. Choir Aahs.Sustain.68",
----| "samples.054. Voice Oohs.Main.68",
----| "samples.054. Voice Oohs.Main.78",
----| "samples.054. Voice Oohs.Main.90",
----| "samples.054. Voice Oohs.Sustain.68",
----| "samples.054. Voice Oohs.Sustain.78",
----| "samples.054. Voice Oohs.Sustain.90",
----| "samples.055. Synth Voice.Main.64",
----| "samples.055. Synth Voice.Main.74",
----| "samples.055. Synth Voice.Main.86",
----| "samples.055. Synth Voice.Sustain.64",
----| "samples.055. Synth Voice.Sustain.74",
----| "samples.055. Synth Voice.Sustain.86",
----| "samples.056. Orchestra Hit.Main.68",
----| "samples.057. Trumpet.Main.40",
----| "samples.057. Trumpet.Main.48",
----| "samples.057. Trumpet.Main.53",
----| "samples.057. Trumpet.Main.57",
----| "samples.057. Trumpet.Main.61",
----| "samples.057. Trumpet.Main.65",
----| "samples.057. Trumpet.Main.69",
----| "samples.057. Trumpet.Main.74",
----| "samples.057. Trumpet.Main.80",
----| "samples.057. Trumpet.Main.89",
----| "samples.057. Trumpet.Sustain.40",
----| "samples.057. Trumpet.Sustain.48",
----| "samples.057. Trumpet.Sustain.53",
----| "samples.057. Trumpet.Sustain.57",
----| "samples.057. Trumpet.Sustain.61",
----| "samples.057. Trumpet.Sustain.65",
----| "samples.057. Trumpet.Sustain.69",
----| "samples.057. Trumpet.Sustain.74",
----| "samples.057. Trumpet.Sustain.80",
----| "samples.057. Trumpet.Sustain.89",
----| "samples.058. Trombone.Main.62",
----| "samples.058. Trombone.Main.68",
----| "samples.058. Trombone.Main.77",
----| "samples.058. Trombone.Main.86",
----| "samples.058. Trombone.Main.93",
----| "samples.058. Trombone.Sustain.62",
----| "samples.058. Trombone.Sustain.68",
----| "samples.058. Trombone.Sustain.77",
----| "samples.058. Trombone.Sustain.86",
----| "samples.058. Trombone.Sustain.93",
----| "samples.059. Tuba.Main.39",
----| "samples.059. Tuba.Main.50",
----| "samples.059. Tuba.Sustain.39",
----| "samples.059. Tuba.Sustain.50",
----| "samples.060. Muted Trumpet.Main.64",
----| "samples.060. Muted Trumpet.Main.73",
----| "samples.060. Muted Trumpet.Main.79",
----| "samples.060. Muted Trumpet.Main.86",
----| "samples.060. Muted Trumpet.Sustain.64",
----| "samples.060. Muted Trumpet.Sustain.73",
----| "samples.060. Muted Trumpet.Sustain.79",
----| "samples.060. Muted Trumpet.Sustain.86",
----| "samples.061. French Horn.Main.60",
----| "samples.061. French Horn.Main.72",
----| "samples.061. French Horn.Sustain.60",
----| "samples.061. French Horn.Sustain.72",
----| "samples.062. Brass Section.Main.64",
----| "samples.062. Brass Section.Main.72",
----| "samples.062. Brass Section.Main.84",
----| "samples.062. Brass Section.Main.96",
----| "samples.062. Brass Section.Sustain.64",
----| "samples.062. Brass Section.Sustain.72",
----| "samples.062. Brass Section.Sustain.84",
----| "samples.062. Brass Section.Sustain.96",
----| "samples.063. SynthBrass 1.Main.48",
----| "samples.063. SynthBrass 1.Main.60",
----| "samples.063. SynthBrass 1.Main.72",
----| "samples.063. SynthBrass 1.Main.84",
----| "samples.063. SynthBrass 1.Main.95",
----| "samples.063. SynthBrass 1.Sustain.48",
----| "samples.063. SynthBrass 1.Sustain.60",
----| "samples.063. SynthBrass 1.Sustain.72",
----| "samples.063. SynthBrass 1.Sustain.84",
----| "samples.063. SynthBrass 1.Sustain.95",
----| "samples.064. SynthBrass 2.Main.43",
----| "samples.064. SynthBrass 2.Main.55",
----| "samples.064. SynthBrass 2.Main.72",
----| "samples.064. SynthBrass 2.Sustain.43",
----| "samples.064. SynthBrass 2.Sustain.55",
----| "samples.064. SynthBrass 2.Sustain.72",
----| "samples.065. Soprano Sax.Main.58",
----| "samples.065. Soprano Sax.Main.64",
----| "samples.065. Soprano Sax.Main.70",
----| "samples.065. Soprano Sax.Main.76",
----| "samples.065. Soprano Sax.Main.83",
----| "samples.065. Soprano Sax.Main.89",
----| "samples.065. Soprano Sax.Sustain.58",
----| "samples.065. Soprano Sax.Sustain.64",
----| "samples.065. Soprano Sax.Sustain.70",
----| "samples.065. Soprano Sax.Sustain.76",
----| "samples.065. Soprano Sax.Sustain.83",
----| "samples.065. Soprano Sax.Sustain.89",
----| "samples.066. Alto Sax.Main.41",
----| "samples.066. Alto Sax.Main.47",
----| "samples.066. Alto Sax.Main.51",
----| "samples.066. Alto Sax.Main.57",
----| "samples.066. Alto Sax.Main.65",
----| "samples.066. Alto Sax.Main.75",
----| "samples.066. Alto Sax.Main.83",
----| "samples.066. Alto Sax.Main.92",
----| "samples.066. Alto Sax.Sustain.41",
----| "samples.066. Alto Sax.Sustain.47",
----| "samples.066. Alto Sax.Sustain.51",
----| "samples.066. Alto Sax.Sustain.57",
----| "samples.066. Alto Sax.Sustain.65",
----| "samples.066. Alto Sax.Sustain.75",
----| "samples.066. Alto Sax.Sustain.83",
----| "samples.066. Alto Sax.Sustain.92",
----| "samples.067. Tenor Sax.Main.34",
----| "samples.067. Tenor Sax.Main.45",
----| "samples.067. Tenor Sax.Main.51",
----| "samples.067. Tenor Sax.Main.56",
----| "samples.067. Tenor Sax.Main.62",
----| "samples.067. Tenor Sax.Main.69",
----| "samples.067. Tenor Sax.Main.77",
----| "samples.067. Tenor Sax.Main.85",
----| "samples.067. Tenor Sax.Sustain.34",
----| "samples.067. Tenor Sax.Sustain.45",
----| "samples.067. Tenor Sax.Sustain.51",
----| "samples.067. Tenor Sax.Sustain.56",
----| "samples.067. Tenor Sax.Sustain.62",
----| "samples.067. Tenor Sax.Sustain.69",
----| "samples.067. Tenor Sax.Sustain.77",
----| "samples.067. Tenor Sax.Sustain.85",
----| "samples.068. Baritone Sax.Main.38",
----| "samples.068. Baritone Sax.Main.48",
----| "samples.068. Baritone Sax.Main.59",
----| "samples.068. Baritone Sax.Main.86",
----| "samples.068. Baritone Sax.Main.109",
----| "samples.068. Baritone Sax.Sustain.38",
----| "samples.068. Baritone Sax.Sustain.48",
----| "samples.068. Baritone Sax.Sustain.59",
----| "samples.068. Baritone Sax.Sustain.86",
----| "samples.068. Baritone Sax.Sustain.109",
----| "samples.069. Oboe.Main.61",
----| "samples.069. Oboe.Main.69",
----| "samples.069. Oboe.Main.77",
----| "samples.069. Oboe.Main.81",
----| "samples.069. Oboe.Main.85",
----| "samples.069. Oboe.Sustain.61",
----| "samples.069. Oboe.Sustain.69",
----| "samples.069. Oboe.Sustain.77",
----| "samples.069. Oboe.Sustain.81",
----| "samples.069. Oboe.Sustain.85",
----| "samples.070. English Horn.Main.53",
----| "samples.070. English Horn.Main.61",
----| "samples.070. English Horn.Main.70",
----| "samples.070. English Horn.Main.82",
----| "samples.070. English Horn.Sustain.53",
----| "samples.070. English Horn.Sustain.61",
----| "samples.070. English Horn.Sustain.70",
----| "samples.070. English Horn.Sustain.82",
----| "samples.071. Bassoon.Main.44",
----| "samples.071. Bassoon.Main.69",
----| "samples.071. Bassoon.Sustain.44",
----| "samples.071. Bassoon.Sustain.69",
----| "samples.072. Clarinet.Main.55",
----| "samples.072. Clarinet.Main.64",
----| "samples.072. Clarinet.Main.70",
----| "samples.072. Clarinet.Main.75",
----| "samples.072. Clarinet.Main.87",
----| "samples.072. Clarinet.Sustain.55",
----| "samples.072. Clarinet.Sustain.64",
----| "samples.072. Clarinet.Sustain.70",
----| "samples.072. Clarinet.Sustain.75",
----| "samples.072. Clarinet.Sustain.87",
----| "samples.073. Piccolo.Main.79",
----| "samples.073. Piccolo.Main.84",
----| "samples.073. Piccolo.Sustain.79",
----| "samples.073. Piccolo.Sustain.84",
----| "samples.074. Flute.Main.65",
----| "samples.074. Flute.Main.73",
----| "samples.074. Flute.Main.79",
----| "samples.074. Flute.Main.88",
----| "samples.074. Flute.Main.96",
----| "samples.074. Flute.Main.105",
----| "samples.074. Flute.Sustain.65",
----| "samples.074. Flute.Sustain.73",
----| "samples.074. Flute.Sustain.79",
----| "samples.074. Flute.Sustain.88",
----| "samples.074. Flute.Sustain.96",
----| "samples.074. Flute.Sustain.105",
----| "samples.075. Recorder.Main.66",
----| "samples.075. Recorder.Main.75",
----| "samples.075. Recorder.Main.83",
----| "samples.075. Recorder.Main.93",
----| "samples.075. Recorder.Main.103",
----| "samples.075. Recorder.Sustain.66",
----| "samples.075. Recorder.Sustain.75",
----| "samples.075. Recorder.Sustain.83",
----| "samples.075. Recorder.Sustain.93",
----| "samples.075. Recorder.Sustain.103",
----| "samples.076. Pan Flute.Main.73",
----| "samples.076. Pan Flute.Sustain.73",
----| "samples.077. Blown Bottle.Main.72",
----| "samples.077. Blown Bottle.Main.84",
----| "samples.077. Blown Bottle.Sustain.72",
----| "samples.077. Blown Bottle.Sustain.84",
----| "samples.078. Shakuhachi.Main.63",
----| "samples.078. Shakuhachi.Main.70",
----| "samples.078. Shakuhachi.Main.78",
----| "samples.078. Shakuhachi.Sustain.63",
----| "samples.078. Shakuhachi.Sustain.70",
----| "samples.078. Shakuhachi.Sustain.78",
----| "samples.079. Whistle.Main.64",
----| "samples.079. Whistle.Main.71",
----| "samples.079. Whistle.Main.78",
----| "samples.079. Whistle.Main.84",
----| "samples.079. Whistle.Main.91",
----| "samples.079. Whistle.Main.97",
----| "samples.079. Whistle.Sustain.64",
----| "samples.079. Whistle.Sustain.71",
----| "samples.079. Whistle.Sustain.78",
----| "samples.079. Whistle.Sustain.84",
----| "samples.079. Whistle.Sustain.91",
----| "samples.079. Whistle.Sustain.97",
----| "samples.080. Ocarina.Main.72",
----| "samples.080. Ocarina.Main.84",
----| "samples.080. Ocarina.Sustain.72",
----| "samples.080. Ocarina.Sustain.84",
----| "samples.081. Lead 1 (square wave).Main.41",
----| "samples.081. Lead 1 (square wave).Main.48",
----| "samples.081. Lead 1 (square wave).Main.60",
----| "samples.081. Lead 1 (square wave).Main.67",
----| "samples.081. Lead 1 (square wave).Main.79",
----| "samples.081. Lead 1 (square wave).Main.96",
----| "samples.081. Lead 1 (square wave).Sustain.41",
----| "samples.081. Lead 1 (square wave).Sustain.48",
----| "samples.081. Lead 1 (square wave).Sustain.60",
----| "samples.081. Lead 1 (square wave).Sustain.67",
----| "samples.081. Lead 1 (square wave).Sustain.79",
----| "samples.081. Lead 1 (square wave).Sustain.96",
----| "samples.082. Lead 2 (sawtooth wave).Main.48",
----| "samples.082. Lead 2 (sawtooth wave).Main.60",
----| "samples.082. Lead 2 (sawtooth wave).Main.72",
----| "samples.082. Lead 2 (sawtooth wave).Sustain.48",
----| "samples.082. Lead 2 (sawtooth wave).Sustain.60",
----| "samples.082. Lead 2 (sawtooth wave).Sustain.72",
----| "samples.083. Lead 3 (calliope).Main.72",
----| "samples.083. Lead 3 (calliope).Main.84",
----| "samples.083. Lead 3 (calliope).Sustain.72",
----| "samples.083. Lead 3 (calliope).Sustain.84",
----| "samples.084. Lead 4 (chiffer).Main.72",
----| "samples.084. Lead 4 (chiffer).Main.84",
----| "samples.084. Lead 4 (chiffer).Sustain.72",
----| "samples.084. Lead 4 (chiffer).Sustain.84",
----| "samples.085. Lead 5 (charang).Main.60",
----| "samples.085. Lead 5 (charang).Main.84",
----| "samples.085. Lead 5 (charang).Sustain.60",
----| "samples.085. Lead 5 (charang).Sustain.84",
----| "samples.086. Lead 6 (voice solo).Main.66",
----| "samples.086. Lead 6 (voice solo).Sustain.66",
----| "samples.087. Lead 7 (fifths).Main.81",
----| "samples.087. Lead 7 (fifths).Sustain.81",
----| "samples.088. Lead 8 (bass + lead).Main.48",
----| "samples.088. Lead 8 (bass + lead).Main.72",
----| "samples.088. Lead 8 (bass + lead).Main.96",
----| "samples.088. Lead 8 (bass + lead).Sustain.48",
----| "samples.088. Lead 8 (bass + lead).Sustain.72",
----| "samples.088. Lead 8 (bass + lead).Sustain.96",
----| "samples.089. Pad 1 (new age Fantasia).Main.53",
----| "samples.089. Pad 1 (new age Fantasia).Main.81",
----| "samples.089. Pad 1 (new age Fantasia).Sustain.53",
----| "samples.089. Pad 1 (new age Fantasia).Sustain.81",
----| "samples.090. Pad 2 (warm).Main.74",
----| "samples.090. Pad 2 (warm).Sustain.74",
----| "samples.091. Pad 3 (polysynth).Main.48",
----| "samples.091. Pad 3 (polysynth).Main.60",
----| "samples.091. Pad 3 (polysynth).Main.72",
----| "samples.091. Pad 3 (polysynth).Main.84",
----| "samples.091. Pad 3 (polysynth).Main.96",
----| "samples.091. Pad 3 (polysynth).Sustain.48",
----| "samples.091. Pad 3 (polysynth).Sustain.60",
----| "samples.091. Pad 3 (polysynth).Sustain.72",
----| "samples.091. Pad 3 (polysynth).Sustain.84",
----| "samples.091. Pad 3 (polysynth).Sustain.96",
----| "samples.092. Pad 4 (choir).Main.68",
----| "samples.092. Pad 4 (choir).Sustain.68",
----| "samples.093. Pad 5 (bowed).Main.68",
----| "samples.093. Pad 5 (bowed).Sustain.68",
----| "samples.094. Pad 6 (metallic).Main.68",
----| "samples.094. Pad 6 (metallic).Sustain.68",
----| "samples.096. Pad 8 (sweep).Main.46",
----| "samples.096. Pad 8 (sweep).Main.56",
----| "samples.096. Pad 8 (sweep).Main.66",
----| "samples.096. Pad 8 (sweep).Main.76",
----| "samples.096. Pad 8 (sweep).Main.88",
----| "samples.096. Pad 8 (sweep).Sustain.46",
----| "samples.096. Pad 8 (sweep).Sustain.56",
----| "samples.096. Pad 8 (sweep).Sustain.66",
----| "samples.096. Pad 8 (sweep).Sustain.76",
----| "samples.096. Pad 8 (sweep).Sustain.88",
----| "samples.097. FX 1 (rain).Main.67",
----| "samples.097. FX 1 (rain).Sustain.67",
----| "samples.098. FX 2 (soundtrack).Main.59",
----| "samples.098. FX 2 (soundtrack).Main.84",
----| "samples.098. FX 2 (soundtrack).Sustain.59",
----| "samples.098. FX 2 (soundtrack).Sustain.84",
----| "samples.099. FX 3 (crystal).Main.88",
----| "samples.099. FX 3 (crystal).Sustain.88",
----| "samples.100. FX 4 (atmosphere).Main.60",
----| "samples.100. FX 4 (atmosphere).Main.84",
----| "samples.100. FX 4 (atmosphere).Sustain.60",
----| "samples.100. FX 4 (atmosphere).Sustain.84",
----| "samples.101. FX 5 (brightness).Main.60",
----| "samples.101. FX 5 (brightness).Main.84",
----| "samples.101. FX 5 (brightness).Sustain.60",
----| "samples.101. FX 5 (brightness).Sustain.84",
----| "samples.102. FX 6 (goblins).Main.84",
----| "samples.102. FX 6 (goblins).Sustain.84",
----| "samples.103. FX 7 (echoes).Main.60",
----| "samples.103. FX 7 (echoes).Main.84",
----| "samples.103. FX 7 (echoes).Sustain.60",
----| "samples.103. FX 7 (echoes).Sustain.84",
----| "samples.104. FX 8 (sci-fi, star theme).Main.60",
----| "samples.104. FX 8 (sci-fi, star theme).Main.84",
----| "samples.104. FX 8 (sci-fi, star theme).Sustain.60",
----| "samples.104. FX 8 (sci-fi, star theme).Sustain.84",
----| "samples.105. Sitar.Sustain.60",
----| "samples.105. Sitar.Sustain.76",
----| "samples.105. Sitar.Sustain.95",
----| "samples.106. Banjo.Main.60",
----| "samples.106. Banjo.Main.70",
----| "samples.106. Banjo.Main.83",
----| "samples.106. Banjo.Sustain.60",
----| "samples.106. Banjo.Sustain.70",
----| "samples.106. Banjo.Sustain.83",
----| "samples.107. Shamisen.Main.57",
----| "samples.107. Shamisen.Main.69",
----| "samples.107. Shamisen.Main.80",
----| "samples.107. Shamisen.Main.90",
----| "samples.107. Shamisen.Sustain.57",
----| "samples.107. Shamisen.Sustain.69",
----| "samples.107. Shamisen.Sustain.80",
----| "samples.107. Shamisen.Sustain.90",
----| "samples.108. Koto.Main.59",
----| "samples.108. Koto.Main.81",
----| "samples.108. Koto.Sustain.59",
----| "samples.108. Koto.Sustain.81",
----| "samples.109. Kalimba.Main.70",
----| "samples.110. Bag pipe.Main.53",
----| "samples.110. Bag pipe.Main.64",
----| "samples.110. Bag pipe.Main.74",
----| "samples.110. Bag pipe.Main.84",
----| "samples.110. Bag pipe.Main.93",
----| "samples.110. Bag pipe.Sustain.53",
----| "samples.110. Bag pipe.Sustain.64",
----| "samples.110. Bag pipe.Sustain.74",
----| "samples.110. Bag pipe.Sustain.84",
----| "samples.110. Bag pipe.Sustain.93",
----| "samples.111. Fiddle.Main.53",
----| "samples.111. Fiddle.Main.64",
----| "samples.111. Fiddle.Main.74",
----| "samples.111. Fiddle.Main.84",
----| "samples.111. Fiddle.Main.93",
----| "samples.111. Fiddle.Sustain.53",
----| "samples.111. Fiddle.Sustain.64",
----| "samples.111. Fiddle.Sustain.74",
----| "samples.111. Fiddle.Sustain.84",
----| "samples.111. Fiddle.Sustain.93",
----| "samples.113. Tinkle Bell.Main.105",
----| "samples.114. Agogo.Main.79",
----| "samples.115. Steel Drums.Main.83",
----| "samples.116. Woodblock.Main.67",
----| "samples.117. Taiko Drum.Main.72",
----| "samples.117. Taiko Drum.Sustain.72",
----| "samples.118. Melodic Tom.Main.64",
----| "samples.119. Synth Drum.Main.62",
----| "samples.120. Reverse Cymbal.Main.64",
----| "samples.121. Guitar Fret Noise.Main.69",
----| "samples.122. Breath Noise.Main.84",
----| "samples.122. Breath Noise.Main.96",
----| "samples.123. Seashore.Main.60",
----| "samples.124. Bird Tweet.Main.72",
----| "samples.124. Bird Tweet.Sustain.72",
----| "samples.125. Telephone Ring.Sustain.68",
----| "samples.126. Helicopter.Main.62",
----| "samples.126. Helicopter.Sustain.62",
----| "samples.127. Applause.Main.69",
----| "samples.127. Applause.Sustain.69",
----| "samples.128. Gunshot.Main.78",
----| "samples.129. Percussion.Main.26",
----| "samples.129. Percussion.Main.27",
----| "samples.129. Percussion.Main.28",
----| "samples.129. Percussion.Main.29",
----| "samples.129. Percussion.Main.30",
----| "samples.129. Percussion.Main.31",
----| "samples.129. Percussion.Main.32",
----| "samples.129. Percussion.Main.33",
----| "samples.129. Percussion.Main.34",
----| "samples.129. Percussion.Main.35",
----| "samples.129. Percussion.Main.36",
----| "samples.129. Percussion.Main.37",
----| "samples.129. Percussion.Main.38",
----| "samples.129. Percussion.Main.39",
----| "samples.129. Percussion.Main.40",
----| "samples.129. Percussion.Main.41",
----| "samples.129. Percussion.Main.42",
----| "samples.129. Percussion.Main.43",
----| "samples.129. Percussion.Main.44",
----| "samples.129. Percussion.Main.45",
----| "samples.129. Percussion.Main.46",
----| "samples.129. Percussion.Main.47",
----| "samples.129. Percussion.Main.48",
----| "samples.129. Percussion.Main.49",
----| "samples.129. Percussion.Main.50",
----| "samples.129. Percussion.Main.51",
----| "samples.129. Percussion.Main.52",
----| "samples.129. Percussion.Main.53",
----| "samples.129. Percussion.Main.54",
----| "samples.129. Percussion.Main.55",
----| "samples.129. Percussion.Main.56",
----| "samples.129. Percussion.Main.57",
----| "samples.129. Percussion.Main.58",
----| "samples.129. Percussion.Main.59",
----| "samples.129. Percussion.Main.60",
----| "samples.129. Percussion.Main.61",
----| "samples.129. Percussion.Main.62",
----| "samples.129. Percussion.Main.63",
----| "samples.129. Percussion.Main.64",
----| "samples.129. Percussion.Main.65",
----| "samples.129. Percussion.Main.66",
----| "samples.129. Percussion.Main.67",
----| "samples.129. Percussion.Main.68",
----| "samples.129. Percussion.Main.69",
----| "samples.129. Percussion.Main.70",
----| "samples.129. Percussion.Main.71",
----| "samples.129. Percussion.Main.72",
----| "samples.129. Percussion.Main.73",
----| "samples.129. Percussion.Main.74",
----| "samples.129. Percussion.Main.75",
----| "samples.129. Percussion.Main.76",
----| "samples.129. Percussion.Main.77",
----| "samples.129. Percussion.Main.78",
----| "samples.129. Percussion.Main.79",
----| "samples.129. Percussion.Main.80",
----| "samples.129. Percussion.Main.81",
----| "samples.129. Percussion.Main.82",
----| "samples.129. Percussion.Main.83",
----| "samples.129. Percussion.Main.84",
----| "samples.129. Percussion.Main.85",
+---| "samples.001. Acoustic Grand Piano.Main.36"
+---| "samples.001. Acoustic Grand Piano.Main.41"
+---| "samples.001. Acoustic Grand Piano.Main.48"
+---| "samples.001. Acoustic Grand Piano.Main.56"
+---| "samples.001. Acoustic Grand Piano.Main.64"
+---| "samples.001. Acoustic Grand Piano.Main.73"
+---| "samples.001. Acoustic Grand Piano.Main.78"
+---| "samples.001. Acoustic Grand Piano.Main.84"
+---| "samples.001. Acoustic Grand Piano.Main.92"
+---| "samples.001. Acoustic Grand Piano.Main.103"
+---| "samples.001. Acoustic Grand Piano.Sustain.36"
+---| "samples.001. Acoustic Grand Piano.Sustain.41"
+---| "samples.001. Acoustic Grand Piano.Sustain.48"
+---| "samples.001. Acoustic Grand Piano.Sustain.56"
+---| "samples.001. Acoustic Grand Piano.Sustain.64"
+---| "samples.001. Acoustic Grand Piano.Sustain.73"
+---| "samples.001. Acoustic Grand Piano.Sustain.78"
+---| "samples.001. Acoustic Grand Piano.Sustain.84"
+---| "samples.001. Acoustic Grand Piano.Sustain.92"
+---| "samples.001. Acoustic Grand Piano.Sustain.103"
+---| "samples.004. Honky-tonk Piano.Main.42"
+---| "samples.004. Honky-tonk Piano.Main.62"
+---| "samples.004. Honky-tonk Piano.Main.71"
+---| "samples.004. Honky-tonk Piano.Main.84"
+---| "samples.004. Honky-tonk Piano.Main.96"
+---| "samples.004. Honky-tonk Piano.Sustain.42"
+---| "samples.004. Honky-tonk Piano.Sustain.62"
+---| "samples.004. Honky-tonk Piano.Sustain.71"
+---| "samples.004. Honky-tonk Piano.Sustain.84"
+---| "samples.004. Honky-tonk Piano.Sustain.96"
+---| "samples.005. Electric Piano 1 (Rhodes Piano).Sustain.49"
+---| "samples.005. Electric Piano 1 (Rhodes Piano).Sustain.56"
+---| "samples.005. Electric Piano 1 (Rhodes Piano).Sustain.67"
+---| "samples.005. Electric Piano 1 (Rhodes Piano).Sustain.80"
+---| "samples.005. Electric Piano 1 (Rhodes Piano).Sustain.97"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Main.48"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Main.56"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Main.64"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Main.72"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Main.80"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Main.88"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Main.96"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.48"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.56"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.64"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.72"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.80"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.88"
+---| "samples.006. Electric Piano 2 (Chorused Piano).Sustain.96"
+---| "samples.007. Harpsichord.Main.48"
+---| "samples.007. Harpsichord.Main.60"
+---| "samples.007. Harpsichord.Main.72"
+---| "samples.007. Harpsichord.Main.87"
+---| "samples.007. Harpsichord.Sustain.48"
+---| "samples.007. Harpsichord.Sustain.60"
+---| "samples.007. Harpsichord.Sustain.72"
+---| "samples.007. Harpsichord.Sustain.87"
+---| "samples.008. Clavinet.Sustain.48"
+---| "samples.008. Clavinet.Sustain.60"
+---| "samples.008. Clavinet.Sustain.72"
+---| "samples.008. Clavinet.Sustain.84"
+---| "samples.008. Clavinet.Sustain.96"
+---| "samples.009. Celesta.Main.77"
+---| "samples.009. Celesta.Main.90"
+---| "samples.009. Celesta.Main.101"
+---| "samples.009. Celesta.Sustain.77"
+---| "samples.009. Celesta.Sustain.90"
+---| "samples.009. Celesta.Sustain.101"
+---| "samples.010. Glockenspiel.Main.65"
+---| "samples.010. Glockenspiel.Main.77"
+---| "samples.010. Glockenspiel.Main.89"
+---| "samples.010. Glockenspiel.Sustain.65"
+---| "samples.010. Glockenspiel.Sustain.77"
+---| "samples.010. Glockenspiel.Sustain.89"
+---| "samples.011. Music Box.Main.82"
+---| "samples.011. Music Box.Sustain.82"
+---| "samples.012. Vibraphone.Main.52"
+---| "samples.012. Vibraphone.Main.64"
+---| "samples.012. Vibraphone.Main.76"
+---| "samples.012. Vibraphone.Main.88"
+---| "samples.012. Vibraphone.Main.100"
+---| "samples.012. Vibraphone.Sustain.52"
+---| "samples.012. Vibraphone.Sustain.64"
+---| "samples.012. Vibraphone.Sustain.76"
+---| "samples.012. Vibraphone.Sustain.88"
+---| "samples.012. Vibraphone.Sustain.100"
+---| "samples.013. Marimba.Main.54"
+---| "samples.013. Marimba.Main.62"
+---| "samples.013. Marimba.Sustain.54"
+---| "samples.013. Marimba.Sustain.62"
+---| "samples.014. Xylophone.Main.72"
+---| "samples.014. Xylophone.Main.82"
+---| "samples.014. Xylophone.Main.93"
+---| "samples.015. Tubular Bells.Main.84"
+---| "samples.015. Tubular Bells.Sustain.84"
+---| "samples.016. Dulcimer (Santur).Main.74"
+---| "samples.016. Dulcimer (Santur).Sustain.74"
+---| "samples.017. Drawbar Organ (Hammond).Sustain.73"
+---| "samples.017. Drawbar Organ (Hammond).Sustain.85"
+---| "samples.017. Drawbar Organ (Hammond).Sustain.97"
+---| "samples.018. Percussive Organ.Main.53"
+---| "samples.018. Percussive Organ.Main.68"
+---| "samples.018. Percussive Organ.Main.86"
+---| "samples.018. Percussive Organ.Sustain.53"
+---| "samples.018. Percussive Organ.Sustain.68"
+---| "samples.018. Percussive Organ.Sustain.86"
+---| "samples.019. Rock Organ.Main.71"
+---| "samples.019. Rock Organ.Main.83"
+---| "samples.019. Rock Organ.Main.95"
+---| "samples.019. Rock Organ.Sustain.71"
+---| "samples.019. Rock Organ.Sustain.83"
+---| "samples.019. Rock Organ.Sustain.95"
+---| "samples.020. Church Organ.Main.36"
+---| "samples.020. Church Organ.Main.48"
+---| "samples.020. Church Organ.Main.60"
+---| "samples.020. Church Organ.Main.72"
+---| "samples.020. Church Organ.Main.84"
+---| "samples.020. Church Organ.Sustain.36"
+---| "samples.020. Church Organ.Sustain.48"
+---| "samples.020. Church Organ.Sustain.60"
+---| "samples.020. Church Organ.Sustain.72"
+---| "samples.020. Church Organ.Sustain.84"
+---| "samples.021. Reed Organ.Main.53"
+---| "samples.021. Reed Organ.Main.72"
+---| "samples.021. Reed Organ.Main.88"
+---| "samples.021. Reed Organ.Sustain.53"
+---| "samples.021. Reed Organ.Sustain.72"
+---| "samples.021. Reed Organ.Sustain.88"
+---| "samples.022. Accordion (French).Main.68"
+---| "samples.022. Accordion (French).Main.83"
+---| "samples.022. Accordion (French).Main.96"
+---| "samples.022. Accordion (French).Sustain.68"
+---| "samples.022. Accordion (French).Sustain.83"
+---| "samples.022. Accordion (French).Sustain.96"
+---| "samples.023. Harmonica.Main.56"
+---| "samples.023. Harmonica.Main.64"
+---| "samples.023. Harmonica.Main.72"
+---| "samples.023. Harmonica.Main.80"
+---| "samples.023. Harmonica.Main.88"
+---| "samples.023. Harmonica.Main.96"
+---| "samples.023. Harmonica.Sustain.56"
+---| "samples.023. Harmonica.Sustain.64"
+---| "samples.023. Harmonica.Sustain.72"
+---| "samples.023. Harmonica.Sustain.80"
+---| "samples.023. Harmonica.Sustain.88"
+---| "samples.023. Harmonica.Sustain.96"
+---| "samples.024. Tango Accordion (Band neon).Main.64"
+---| "samples.024. Tango Accordion (Band neon).Main.74"
+---| "samples.024. Tango Accordion (Band neon).Sustain.64"
+---| "samples.024. Tango Accordion (Band neon).Sustain.74"
+---| "samples.025. Acoustic Guitar (nylon).Main.48"
+---| "samples.025. Acoustic Guitar (nylon).Main.57"
+---| "samples.025. Acoustic Guitar (nylon).Main.70"
+---| "samples.025. Acoustic Guitar (nylon).Main.79"
+---| "samples.025. Acoustic Guitar (nylon).Main.88"
+---| "samples.025. Acoustic Guitar (nylon).Main.97"
+---| "samples.025. Acoustic Guitar (nylon).Main.101"
+---| "samples.025. Acoustic Guitar (nylon).Sustain.48"
+---| "samples.025. Acoustic Guitar (nylon).Sustain.57"
+---| "samples.025. Acoustic Guitar (nylon).Sustain.70"
+---| "samples.025. Acoustic Guitar (nylon).Sustain.79"
+---| "samples.025. Acoustic Guitar (nylon).Sustain.88"
+---| "samples.025. Acoustic Guitar (nylon).Sustain.97"
+---| "samples.025. Acoustic Guitar (nylon).Sustain.101"
+---| "samples.026. Acoustic Guitar (steel).Main.41"
+---| "samples.026. Acoustic Guitar (steel).Main.49"
+---| "samples.026. Acoustic Guitar (steel).Main.57"
+---| "samples.026. Acoustic Guitar (steel).Main.65"
+---| "samples.026. Acoustic Guitar (steel).Main.74"
+---| "samples.026. Acoustic Guitar (steel).Main.84"
+---| "samples.026. Acoustic Guitar (steel).Sustain.41"
+---| "samples.026. Acoustic Guitar (steel).Sustain.49"
+---| "samples.026. Acoustic Guitar (steel).Sustain.57"
+---| "samples.026. Acoustic Guitar (steel).Sustain.65"
+---| "samples.026. Acoustic Guitar (steel).Sustain.74"
+---| "samples.026. Acoustic Guitar (steel).Sustain.84"
+---| "samples.027. Electric Guitar (jazz).Main.50"
+---| "samples.027. Electric Guitar (jazz).Main.59"
+---| "samples.027. Electric Guitar (jazz).Main.68"
+---| "samples.027. Electric Guitar (jazz).Main.74"
+---| "samples.027. Electric Guitar (jazz).Main.84"
+---| "samples.027. Electric Guitar (jazz).Main.93"
+---| "samples.027. Electric Guitar (jazz).Sustain.50"
+---| "samples.027. Electric Guitar (jazz).Sustain.59"
+---| "samples.027. Electric Guitar (jazz).Sustain.68"
+---| "samples.027. Electric Guitar (jazz).Sustain.74"
+---| "samples.027. Electric Guitar (jazz).Sustain.84"
+---| "samples.027. Electric Guitar (jazz).Sustain.93"
+---| "samples.028. Electric Guitar (clean).Main.48"
+---| "samples.028. Electric Guitar (clean).Main.60"
+---| "samples.028. Electric Guitar (clean).Main.67"
+---| "samples.028. Electric Guitar (clean).Main.72"
+---| "samples.028. Electric Guitar (clean).Main.83"
+---| "samples.028. Electric Guitar (clean).Sustain.48"
+---| "samples.028. Electric Guitar (clean).Sustain.60"
+---| "samples.028. Electric Guitar (clean).Sustain.67"
+---| "samples.028. Electric Guitar (clean).Sustain.72"
+---| "samples.028. Electric Guitar (clean).Sustain.83"
+---| "samples.029. Electric Guitar (muted).Main.43"
+---| "samples.029. Electric Guitar (muted).Main.64"
+---| "samples.029. Electric Guitar (muted).Main.81"
+---| "samples.029. Electric Guitar (muted).Sustain.43"
+---| "samples.029. Electric Guitar (muted).Sustain.64"
+---| "samples.029. Electric Guitar (muted).Sustain.81"
+---| "samples.030. Overdriven Guitar.Main.32"
+---| "samples.030. Overdriven Guitar.Main.40"
+---| "samples.030. Overdriven Guitar.Main.48"
+---| "samples.030. Overdriven Guitar.Main.60"
+---| "samples.030. Overdriven Guitar.Main.69"
+---| "samples.030. Overdriven Guitar.Main.79"
+---| "samples.030. Overdriven Guitar.Main.86"
+---| "samples.030. Overdriven Guitar.Main.94"
+---| "samples.030. Overdriven Guitar.Sustain.32"
+---| "samples.030. Overdriven Guitar.Sustain.40"
+---| "samples.030. Overdriven Guitar.Sustain.48"
+---| "samples.030. Overdriven Guitar.Sustain.60"
+---| "samples.030. Overdriven Guitar.Sustain.69"
+---| "samples.030. Overdriven Guitar.Sustain.79"
+---| "samples.030. Overdriven Guitar.Sustain.86"
+---| "samples.030. Overdriven Guitar.Sustain.94"
+---| "samples.031. Distortion Guitar.Main.36"
+---| "samples.031. Distortion Guitar.Main.42"
+---| "samples.031. Distortion Guitar.Main.47"
+---| "samples.031. Distortion Guitar.Main.52"
+---| "samples.031. Distortion Guitar.Main.59"
+---| "samples.031. Distortion Guitar.Main.65"
+---| "samples.031. Distortion Guitar.Main.72"
+---| "samples.031. Distortion Guitar.Main.80"
+---| "samples.031. Distortion Guitar.Main.89"
+---| "samples.031. Distortion Guitar.Main.97"
+---| "samples.031. Distortion Guitar.Sustain.36"
+---| "samples.031. Distortion Guitar.Sustain.42"
+---| "samples.031. Distortion Guitar.Sustain.47"
+---| "samples.031. Distortion Guitar.Sustain.52"
+---| "samples.031. Distortion Guitar.Sustain.59"
+---| "samples.031. Distortion Guitar.Sustain.65"
+---| "samples.031. Distortion Guitar.Sustain.72"
+---| "samples.031. Distortion Guitar.Sustain.80"
+---| "samples.031. Distortion Guitar.Sustain.89"
+---| "samples.031. Distortion Guitar.Sustain.97"
+---| "samples.032. Guitar harmonics.Main.52"
+---| "samples.032. Guitar harmonics.Main.82"
+---| "samples.032. Guitar harmonics.Sustain.52"
+---| "samples.032. Guitar harmonics.Sustain.82"
+---| "samples.033. Acoustic Bass.Main.32"
+---| "samples.033. Acoustic Bass.Main.43"
+---| "samples.033. Acoustic Bass.Main.60"
+---| "samples.033. Acoustic Bass.Main.83"
+---| "samples.033. Acoustic Bass.Main.96"
+---| "samples.033. Acoustic Bass.Sustain.32"
+---| "samples.033. Acoustic Bass.Sustain.43"
+---| "samples.033. Acoustic Bass.Sustain.60"
+---| "samples.033. Acoustic Bass.Sustain.83"
+---| "samples.033. Acoustic Bass.Sustain.96"
+---| "samples.034. Electric Bass (fingered).Main.56"
+---| "samples.034. Electric Bass (fingered).Main.67"
+---| "samples.034. Electric Bass (fingered).Main.76"
+---| "samples.034. Electric Bass (fingered).Sustain.56"
+---| "samples.034. Electric Bass (fingered).Sustain.67"
+---| "samples.034. Electric Bass (fingered).Sustain.76"
+---| "samples.035. Electric Bass (picked).Main.30"
+---| "samples.035. Electric Bass (picked).Main.40"
+---| "samples.035. Electric Bass (picked).Main.50"
+---| "samples.035. Electric Bass (picked).Sustain.30"
+---| "samples.035. Electric Bass (picked).Sustain.40"
+---| "samples.035. Electric Bass (picked).Sustain.50"
+---| "samples.036. Fretless Bass.Main.36"
+---| "samples.036. Fretless Bass.Main.48"
+---| "samples.036. Fretless Bass.Main.60"
+---| "samples.036. Fretless Bass.Sustain.36"
+---| "samples.036. Fretless Bass.Sustain.48"
+---| "samples.036. Fretless Bass.Sustain.60"
+---| "samples.037. Slap Bass 1.Main.31"
+---| "samples.037. Slap Bass 1.Main.43"
+---| "samples.037. Slap Bass 1.Main.84"
+---| "samples.037. Slap Bass 1.Sustain.31"
+---| "samples.037. Slap Bass 1.Sustain.43"
+---| "samples.037. Slap Bass 1.Sustain.84"
+---| "samples.038. Slap Bass 2.Main.52"
+---| "samples.038. Slap Bass 2.Sustain.52"
+---| "samples.039. Synth Bass 1.Main.33"
+---| "samples.039. Synth Bass 1.Main.48"
+---| "samples.039. Synth Bass 1.Main.72"
+---| "samples.039. Synth Bass 1.Main.96"
+---| "samples.039. Synth Bass 1.Sustain.33"
+---| "samples.039. Synth Bass 1.Sustain.48"
+---| "samples.039. Synth Bass 1.Sustain.72"
+---| "samples.039. Synth Bass 1.Sustain.96"
+---| "samples.040. Synth Bass 2.Main.33"
+---| "samples.040. Synth Bass 2.Main.48"
+---| "samples.040. Synth Bass 2.Main.72"
+---| "samples.040. Synth Bass 2.Sustain.33"
+---| "samples.040. Synth Bass 2.Sustain.48"
+---| "samples.040. Synth Bass 2.Sustain.72"
+---| "samples.041. Violin.Main.56"
+---| "samples.041. Violin.Main.60"
+---| "samples.041. Violin.Main.64"
+---| "samples.041. Violin.Main.69"
+---| "samples.041. Violin.Main.74"
+---| "samples.041. Violin.Main.83"
+---| "samples.041. Violin.Main.92"
+---| "samples.041. Violin.Sustain.56"
+---| "samples.041. Violin.Sustain.60"
+---| "samples.041. Violin.Sustain.64"
+---| "samples.041. Violin.Sustain.69"
+---| "samples.041. Violin.Sustain.74"
+---| "samples.041. Violin.Sustain.83"
+---| "samples.041. Violin.Sustain.92"
+---| "samples.043. Cello.Main.28"
+---| "samples.043. Cello.Main.53"
+---| "samples.043. Cello.Main.64"
+---| "samples.043. Cello.Main.76"
+---| "samples.043. Cello.Sustain.28"
+---| "samples.043. Cello.Sustain.53"
+---| "samples.043. Cello.Sustain.64"
+---| "samples.043. Cello.Sustain.76"
+---| "samples.044. Contrabass.Main.29"
+---| "samples.044. Contrabass.Main.42"
+---| "samples.044. Contrabass.Main.59"
+---| "samples.044. Contrabass.Sustain.29"
+---| "samples.044. Contrabass.Sustain.42"
+---| "samples.044. Contrabass.Sustain.59"
+---| "samples.045. Tremolo Strings.Sustain.57"
+---| "samples.045. Tremolo Strings.Sustain.71"
+---| "samples.045. Tremolo Strings.Sustain.88"
+---| "samples.046. Pizzicato Strings.Main.71"
+---| "samples.046. Pizzicato Strings.Main.83"
+---| "samples.046. Pizzicato Strings.Main.95"
+---| "samples.047. Orchestral Harp.Main.57"
+---| "samples.047. Orchestral Harp.Main.70"
+---| "samples.047. Orchestral Harp.Sustain.57"
+---| "samples.047. Orchestral Harp.Sustain.70"
+---| "samples.048. Timpani.Main.56"
+---| "samples.049. String Ensemble 1.Main.48"
+---| "samples.049. String Ensemble 1.Main.69"
+---| "samples.049. String Ensemble 1.Main.86"
+---| "samples.049. String Ensemble 1.Sustain.48"
+---| "samples.049. String Ensemble 1.Sustain.69"
+---| "samples.049. String Ensemble 1.Sustain.86"
+---| "samples.050. String Ensemble 2.Main.48"
+---| "samples.050. String Ensemble 2.Main.69"
+---| "samples.050. String Ensemble 2.Main.86"
+---| "samples.050. String Ensemble 2.Sustain.48"
+---| "samples.050. String Ensemble 2.Sustain.69"
+---| "samples.050. String Ensemble 2.Sustain.86"
+---| "samples.051. SynthStrings 1.Main.48"
+---| "samples.051. SynthStrings 1.Main.69"
+---| "samples.051. SynthStrings 1.Main.86"
+---| "samples.051. SynthStrings 1.Sustain.48"
+---| "samples.051. SynthStrings 1.Sustain.69"
+---| "samples.051. SynthStrings 1.Sustain.86"
+---| "samples.053. Choir Aahs.Main.68"
+---| "samples.053. Choir Aahs.Sustain.68"
+---| "samples.054. Voice Oohs.Main.68"
+---| "samples.054. Voice Oohs.Main.78"
+---| "samples.054. Voice Oohs.Main.90"
+---| "samples.054. Voice Oohs.Sustain.68"
+---| "samples.054. Voice Oohs.Sustain.78"
+---| "samples.054. Voice Oohs.Sustain.90"
+---| "samples.055. Synth Voice.Main.64"
+---| "samples.055. Synth Voice.Main.74"
+---| "samples.055. Synth Voice.Main.86"
+---| "samples.055. Synth Voice.Sustain.64"
+---| "samples.055. Synth Voice.Sustain.74"
+---| "samples.055. Synth Voice.Sustain.86"
+---| "samples.056. Orchestra Hit.Main.68"
+---| "samples.057. Trumpet.Main.40"
+---| "samples.057. Trumpet.Main.48"
+---| "samples.057. Trumpet.Main.53"
+---| "samples.057. Trumpet.Main.57"
+---| "samples.057. Trumpet.Main.61"
+---| "samples.057. Trumpet.Main.65"
+---| "samples.057. Trumpet.Main.69"
+---| "samples.057. Trumpet.Main.74"
+---| "samples.057. Trumpet.Main.80"
+---| "samples.057. Trumpet.Main.89"
+---| "samples.057. Trumpet.Sustain.40"
+---| "samples.057. Trumpet.Sustain.48"
+---| "samples.057. Trumpet.Sustain.53"
+---| "samples.057. Trumpet.Sustain.57"
+---| "samples.057. Trumpet.Sustain.61"
+---| "samples.057. Trumpet.Sustain.65"
+---| "samples.057. Trumpet.Sustain.69"
+---| "samples.057. Trumpet.Sustain.74"
+---| "samples.057. Trumpet.Sustain.80"
+---| "samples.057. Trumpet.Sustain.89"
+---| "samples.058. Trombone.Main.62"
+---| "samples.058. Trombone.Main.68"
+---| "samples.058. Trombone.Main.77"
+---| "samples.058. Trombone.Main.86"
+---| "samples.058. Trombone.Main.93"
+---| "samples.058. Trombone.Sustain.62"
+---| "samples.058. Trombone.Sustain.68"
+---| "samples.058. Trombone.Sustain.77"
+---| "samples.058. Trombone.Sustain.86"
+---| "samples.058. Trombone.Sustain.93"
+---| "samples.059. Tuba.Main.39"
+---| "samples.059. Tuba.Main.50"
+---| "samples.059. Tuba.Sustain.39"
+---| "samples.059. Tuba.Sustain.50"
+---| "samples.060. Muted Trumpet.Main.64"
+---| "samples.060. Muted Trumpet.Main.73"
+---| "samples.060. Muted Trumpet.Main.79"
+---| "samples.060. Muted Trumpet.Main.86"
+---| "samples.060. Muted Trumpet.Sustain.64"
+---| "samples.060. Muted Trumpet.Sustain.73"
+---| "samples.060. Muted Trumpet.Sustain.79"
+---| "samples.060. Muted Trumpet.Sustain.86"
+---| "samples.061. French Horn.Main.60"
+---| "samples.061. French Horn.Main.72"
+---| "samples.061. French Horn.Sustain.60"
+---| "samples.061. French Horn.Sustain.72"
+---| "samples.062. Brass Section.Main.64"
+---| "samples.062. Brass Section.Main.72"
+---| "samples.062. Brass Section.Main.84"
+---| "samples.062. Brass Section.Main.96"
+---| "samples.062. Brass Section.Sustain.64"
+---| "samples.062. Brass Section.Sustain.72"
+---| "samples.062. Brass Section.Sustain.84"
+---| "samples.062. Brass Section.Sustain.96"
+---| "samples.063. SynthBrass 1.Main.48"
+---| "samples.063. SynthBrass 1.Main.60"
+---| "samples.063. SynthBrass 1.Main.72"
+---| "samples.063. SynthBrass 1.Main.84"
+---| "samples.063. SynthBrass 1.Main.95"
+---| "samples.063. SynthBrass 1.Sustain.48"
+---| "samples.063. SynthBrass 1.Sustain.60"
+---| "samples.063. SynthBrass 1.Sustain.72"
+---| "samples.063. SynthBrass 1.Sustain.84"
+---| "samples.063. SynthBrass 1.Sustain.95"
+---| "samples.064. SynthBrass 2.Main.43"
+---| "samples.064. SynthBrass 2.Main.55"
+---| "samples.064. SynthBrass 2.Main.72"
+---| "samples.064. SynthBrass 2.Sustain.43"
+---| "samples.064. SynthBrass 2.Sustain.55"
+---| "samples.064. SynthBrass 2.Sustain.72"
+---| "samples.065. Soprano Sax.Main.58"
+---| "samples.065. Soprano Sax.Main.64"
+---| "samples.065. Soprano Sax.Main.70"
+---| "samples.065. Soprano Sax.Main.76"
+---| "samples.065. Soprano Sax.Main.83"
+---| "samples.065. Soprano Sax.Main.89"
+---| "samples.065. Soprano Sax.Sustain.58"
+---| "samples.065. Soprano Sax.Sustain.64"
+---| "samples.065. Soprano Sax.Sustain.70"
+---| "samples.065. Soprano Sax.Sustain.76"
+---| "samples.065. Soprano Sax.Sustain.83"
+---| "samples.065. Soprano Sax.Sustain.89"
+---| "samples.066. Alto Sax.Main.41"
+---| "samples.066. Alto Sax.Main.47"
+---| "samples.066. Alto Sax.Main.51"
+---| "samples.066. Alto Sax.Main.57"
+---| "samples.066. Alto Sax.Main.65"
+---| "samples.066. Alto Sax.Main.75"
+---| "samples.066. Alto Sax.Main.83"
+---| "samples.066. Alto Sax.Main.92"
+---| "samples.066. Alto Sax.Sustain.41"
+---| "samples.066. Alto Sax.Sustain.47"
+---| "samples.066. Alto Sax.Sustain.51"
+---| "samples.066. Alto Sax.Sustain.57"
+---| "samples.066. Alto Sax.Sustain.65"
+---| "samples.066. Alto Sax.Sustain.75"
+---| "samples.066. Alto Sax.Sustain.83"
+---| "samples.066. Alto Sax.Sustain.92"
+---| "samples.067. Tenor Sax.Main.34"
+---| "samples.067. Tenor Sax.Main.45"
+---| "samples.067. Tenor Sax.Main.51"
+---| "samples.067. Tenor Sax.Main.56"
+---| "samples.067. Tenor Sax.Main.62"
+---| "samples.067. Tenor Sax.Main.69"
+---| "samples.067. Tenor Sax.Main.77"
+---| "samples.067. Tenor Sax.Main.85"
+---| "samples.067. Tenor Sax.Sustain.34"
+---| "samples.067. Tenor Sax.Sustain.45"
+---| "samples.067. Tenor Sax.Sustain.51"
+---| "samples.067. Tenor Sax.Sustain.56"
+---| "samples.067. Tenor Sax.Sustain.62"
+---| "samples.067. Tenor Sax.Sustain.69"
+---| "samples.067. Tenor Sax.Sustain.77"
+---| "samples.067. Tenor Sax.Sustain.85"
+---| "samples.068. Baritone Sax.Main.38"
+---| "samples.068. Baritone Sax.Main.48"
+---| "samples.068. Baritone Sax.Main.59"
+---| "samples.068. Baritone Sax.Main.86"
+---| "samples.068. Baritone Sax.Main.109"
+---| "samples.068. Baritone Sax.Sustain.38"
+---| "samples.068. Baritone Sax.Sustain.48"
+---| "samples.068. Baritone Sax.Sustain.59"
+---| "samples.068. Baritone Sax.Sustain.86"
+---| "samples.068. Baritone Sax.Sustain.109"
+---| "samples.069. Oboe.Main.61"
+---| "samples.069. Oboe.Main.69"
+---| "samples.069. Oboe.Main.77"
+---| "samples.069. Oboe.Main.81"
+---| "samples.069. Oboe.Main.85"
+---| "samples.069. Oboe.Sustain.61"
+---| "samples.069. Oboe.Sustain.69"
+---| "samples.069. Oboe.Sustain.77"
+---| "samples.069. Oboe.Sustain.81"
+---| "samples.069. Oboe.Sustain.85"
+---| "samples.070. English Horn.Main.53"
+---| "samples.070. English Horn.Main.61"
+---| "samples.070. English Horn.Main.70"
+---| "samples.070. English Horn.Main.82"
+---| "samples.070. English Horn.Sustain.53"
+---| "samples.070. English Horn.Sustain.61"
+---| "samples.070. English Horn.Sustain.70"
+---| "samples.070. English Horn.Sustain.82"
+---| "samples.071. Bassoon.Main.44"
+---| "samples.071. Bassoon.Main.69"
+---| "samples.071. Bassoon.Sustain.44"
+---| "samples.071. Bassoon.Sustain.69"
+---| "samples.072. Clarinet.Main.55"
+---| "samples.072. Clarinet.Main.64"
+---| "samples.072. Clarinet.Main.70"
+---| "samples.072. Clarinet.Main.75"
+---| "samples.072. Clarinet.Main.87"
+---| "samples.072. Clarinet.Sustain.55"
+---| "samples.072. Clarinet.Sustain.64"
+---| "samples.072. Clarinet.Sustain.70"
+---| "samples.072. Clarinet.Sustain.75"
+---| "samples.072. Clarinet.Sustain.87"
+---| "samples.073. Piccolo.Main.79"
+---| "samples.073. Piccolo.Main.84"
+---| "samples.073. Piccolo.Sustain.79"
+---| "samples.073. Piccolo.Sustain.84"
+---| "samples.074. Flute.Main.65"
+---| "samples.074. Flute.Main.73"
+---| "samples.074. Flute.Main.79"
+---| "samples.074. Flute.Main.88"
+---| "samples.074. Flute.Main.96"
+---| "samples.074. Flute.Main.105"
+---| "samples.074. Flute.Sustain.65"
+---| "samples.074. Flute.Sustain.73"
+---| "samples.074. Flute.Sustain.79"
+---| "samples.074. Flute.Sustain.88"
+---| "samples.074. Flute.Sustain.96"
+---| "samples.074. Flute.Sustain.105"
+---| "samples.075. Recorder.Main.66"
+---| "samples.075. Recorder.Main.75"
+---| "samples.075. Recorder.Main.83"
+---| "samples.075. Recorder.Main.93"
+---| "samples.075. Recorder.Main.103"
+---| "samples.075. Recorder.Sustain.66"
+---| "samples.075. Recorder.Sustain.75"
+---| "samples.075. Recorder.Sustain.83"
+---| "samples.075. Recorder.Sustain.93"
+---| "samples.075. Recorder.Sustain.103"
+---| "samples.076. Pan Flute.Main.73"
+---| "samples.076. Pan Flute.Sustain.73"
+---| "samples.077. Blown Bottle.Main.72"
+---| "samples.077. Blown Bottle.Main.84"
+---| "samples.077. Blown Bottle.Sustain.72"
+---| "samples.077. Blown Bottle.Sustain.84"
+---| "samples.078. Shakuhachi.Main.63"
+---| "samples.078. Shakuhachi.Main.70"
+---| "samples.078. Shakuhachi.Main.78"
+---| "samples.078. Shakuhachi.Sustain.63"
+---| "samples.078. Shakuhachi.Sustain.70"
+---| "samples.078. Shakuhachi.Sustain.78"
+---| "samples.079. Whistle.Main.64"
+---| "samples.079. Whistle.Main.71"
+---| "samples.079. Whistle.Main.78"
+---| "samples.079. Whistle.Main.84"
+---| "samples.079. Whistle.Main.91"
+---| "samples.079. Whistle.Main.97"
+---| "samples.079. Whistle.Sustain.64"
+---| "samples.079. Whistle.Sustain.71"
+---| "samples.079. Whistle.Sustain.78"
+---| "samples.079. Whistle.Sustain.84"
+---| "samples.079. Whistle.Sustain.91"
+---| "samples.079. Whistle.Sustain.97"
+---| "samples.080. Ocarina.Main.72"
+---| "samples.080. Ocarina.Main.84"
+---| "samples.080. Ocarina.Sustain.72"
+---| "samples.080. Ocarina.Sustain.84"
+---| "samples.081. Lead 1 (square wave).Main.41"
+---| "samples.081. Lead 1 (square wave).Main.48"
+---| "samples.081. Lead 1 (square wave).Main.60"
+---| "samples.081. Lead 1 (square wave).Main.67"
+---| "samples.081. Lead 1 (square wave).Main.79"
+---| "samples.081. Lead 1 (square wave).Main.96"
+---| "samples.081. Lead 1 (square wave).Sustain.41"
+---| "samples.081. Lead 1 (square wave).Sustain.48"
+---| "samples.081. Lead 1 (square wave).Sustain.60"
+---| "samples.081. Lead 1 (square wave).Sustain.67"
+---| "samples.081. Lead 1 (square wave).Sustain.79"
+---| "samples.081. Lead 1 (square wave).Sustain.96"
+---| "samples.082. Lead 2 (sawtooth wave).Main.48"
+---| "samples.082. Lead 2 (sawtooth wave).Main.60"
+---| "samples.082. Lead 2 (sawtooth wave).Main.72"
+---| "samples.082. Lead 2 (sawtooth wave).Sustain.48"
+---| "samples.082. Lead 2 (sawtooth wave).Sustain.60"
+---| "samples.082. Lead 2 (sawtooth wave).Sustain.72"
+---| "samples.083. Lead 3 (calliope).Main.72"
+---| "samples.083. Lead 3 (calliope).Main.84"
+---| "samples.083. Lead 3 (calliope).Sustain.72"
+---| "samples.083. Lead 3 (calliope).Sustain.84"
+---| "samples.084. Lead 4 (chiffer).Main.72"
+---| "samples.084. Lead 4 (chiffer).Main.84"
+---| "samples.084. Lead 4 (chiffer).Sustain.72"
+---| "samples.084. Lead 4 (chiffer).Sustain.84"
+---| "samples.085. Lead 5 (charang).Main.60"
+---| "samples.085. Lead 5 (charang).Main.84"
+---| "samples.085. Lead 5 (charang).Sustain.60"
+---| "samples.085. Lead 5 (charang).Sustain.84"
+---| "samples.086. Lead 6 (voice solo).Main.66"
+---| "samples.086. Lead 6 (voice solo).Sustain.66"
+---| "samples.087. Lead 7 (fifths).Main.81"
+---| "samples.087. Lead 7 (fifths).Sustain.81"
+---| "samples.088. Lead 8 (bass + lead).Main.48"
+---| "samples.088. Lead 8 (bass + lead).Main.72"
+---| "samples.088. Lead 8 (bass + lead).Main.96"
+---| "samples.088. Lead 8 (bass + lead).Sustain.48"
+---| "samples.088. Lead 8 (bass + lead).Sustain.72"
+---| "samples.088. Lead 8 (bass + lead).Sustain.96"
+---| "samples.089. Pad 1 (new age Fantasia).Main.53"
+---| "samples.089. Pad 1 (new age Fantasia).Main.81"
+---| "samples.089. Pad 1 (new age Fantasia).Sustain.53"
+---| "samples.089. Pad 1 (new age Fantasia).Sustain.81"
+---| "samples.090. Pad 2 (warm).Main.74"
+---| "samples.090. Pad 2 (warm).Sustain.74"
+---| "samples.091. Pad 3 (polysynth).Main.48"
+---| "samples.091. Pad 3 (polysynth).Main.60"
+---| "samples.091. Pad 3 (polysynth).Main.72"
+---| "samples.091. Pad 3 (polysynth).Main.84"
+---| "samples.091. Pad 3 (polysynth).Main.96"
+---| "samples.091. Pad 3 (polysynth).Sustain.48"
+---| "samples.091. Pad 3 (polysynth).Sustain.60"
+---| "samples.091. Pad 3 (polysynth).Sustain.72"
+---| "samples.091. Pad 3 (polysynth).Sustain.84"
+---| "samples.091. Pad 3 (polysynth).Sustain.96"
+---| "samples.092. Pad 4 (choir).Main.68"
+---| "samples.092. Pad 4 (choir).Sustain.68"
+---| "samples.093. Pad 5 (bowed).Main.68"
+---| "samples.093. Pad 5 (bowed).Sustain.68"
+---| "samples.094. Pad 6 (metallic).Main.68"
+---| "samples.094. Pad 6 (metallic).Sustain.68"
+---| "samples.096. Pad 8 (sweep).Main.46"
+---| "samples.096. Pad 8 (sweep).Main.56"
+---| "samples.096. Pad 8 (sweep).Main.66"
+---| "samples.096. Pad 8 (sweep).Main.76"
+---| "samples.096. Pad 8 (sweep).Main.88"
+---| "samples.096. Pad 8 (sweep).Sustain.46"
+---| "samples.096. Pad 8 (sweep).Sustain.56"
+---| "samples.096. Pad 8 (sweep).Sustain.66"
+---| "samples.096. Pad 8 (sweep).Sustain.76"
+---| "samples.096. Pad 8 (sweep).Sustain.88"
+---| "samples.097. FX 1 (rain).Main.67"
+---| "samples.097. FX 1 (rain).Sustain.67"
+---| "samples.098. FX 2 (soundtrack).Main.59"
+---| "samples.098. FX 2 (soundtrack).Main.84"
+---| "samples.098. FX 2 (soundtrack).Sustain.59"
+---| "samples.098. FX 2 (soundtrack).Sustain.84"
+---| "samples.099. FX 3 (crystal).Main.88"
+---| "samples.099. FX 3 (crystal).Sustain.88"
+---| "samples.100. FX 4 (atmosphere).Main.60"
+---| "samples.100. FX 4 (atmosphere).Main.84"
+---| "samples.100. FX 4 (atmosphere).Sustain.60"
+---| "samples.100. FX 4 (atmosphere).Sustain.84"
+---| "samples.101. FX 5 (brightness).Main.60"
+---| "samples.101. FX 5 (brightness).Main.84"
+---| "samples.101. FX 5 (brightness).Sustain.60"
+---| "samples.101. FX 5 (brightness).Sustain.84"
+---| "samples.102. FX 6 (goblins).Main.84"
+---| "samples.102. FX 6 (goblins).Sustain.84"
+---| "samples.103. FX 7 (echoes).Main.60"
+---| "samples.103. FX 7 (echoes).Main.84"
+---| "samples.103. FX 7 (echoes).Sustain.60"
+---| "samples.103. FX 7 (echoes).Sustain.84"
+---| "samples.104. FX 8 (sci-fi, star theme).Main.60"
+---| "samples.104. FX 8 (sci-fi, star theme).Main.84"
+---| "samples.104. FX 8 (sci-fi, star theme).Sustain.60"
+---| "samples.104. FX 8 (sci-fi, star theme).Sustain.84"
+---| "samples.105. Sitar.Sustain.60"
+---| "samples.105. Sitar.Sustain.76"
+---| "samples.105. Sitar.Sustain.95"
+---| "samples.106. Banjo.Main.60"
+---| "samples.106. Banjo.Main.70"
+---| "samples.106. Banjo.Main.83"
+---| "samples.106. Banjo.Sustain.60"
+---| "samples.106. Banjo.Sustain.70"
+---| "samples.106. Banjo.Sustain.83"
+---| "samples.107. Shamisen.Main.57"
+---| "samples.107. Shamisen.Main.69"
+---| "samples.107. Shamisen.Main.80"
+---| "samples.107. Shamisen.Main.90"
+---| "samples.107. Shamisen.Sustain.57"
+---| "samples.107. Shamisen.Sustain.69"
+---| "samples.107. Shamisen.Sustain.80"
+---| "samples.107. Shamisen.Sustain.90"
+---| "samples.108. Koto.Main.59"
+---| "samples.108. Koto.Main.81"
+---| "samples.108. Koto.Sustain.59"
+---| "samples.108. Koto.Sustain.81"
+---| "samples.109. Kalimba.Main.70"
+---| "samples.110. Bag pipe.Main.53"
+---| "samples.110. Bag pipe.Main.64"
+---| "samples.110. Bag pipe.Main.74"
+---| "samples.110. Bag pipe.Main.84"
+---| "samples.110. Bag pipe.Main.93"
+---| "samples.110. Bag pipe.Sustain.53"
+---| "samples.110. Bag pipe.Sustain.64"
+---| "samples.110. Bag pipe.Sustain.74"
+---| "samples.110. Bag pipe.Sustain.84"
+---| "samples.110. Bag pipe.Sustain.93"
+---| "samples.111. Fiddle.Main.53"
+---| "samples.111. Fiddle.Main.64"
+---| "samples.111. Fiddle.Main.74"
+---| "samples.111. Fiddle.Main.84"
+---| "samples.111. Fiddle.Main.93"
+---| "samples.111. Fiddle.Sustain.53"
+---| "samples.111. Fiddle.Sustain.64"
+---| "samples.111. Fiddle.Sustain.74"
+---| "samples.111. Fiddle.Sustain.84"
+---| "samples.111. Fiddle.Sustain.93"
+---| "samples.113. Tinkle Bell.Main.105"
+---| "samples.114. Agogo.Main.79"
+---| "samples.115. Steel Drums.Main.83"
+---| "samples.116. Woodblock.Main.67"
+---| "samples.117. Taiko Drum.Main.72"
+---| "samples.117. Taiko Drum.Sustain.72"
+---| "samples.118. Melodic Tom.Main.64"
+---| "samples.119. Synth Drum.Main.62"
+---| "samples.120. Reverse Cymbal.Main.64"
+---| "samples.121. Guitar Fret Noise.Main.69"
+---| "samples.122. Breath Noise.Main.84"
+---| "samples.122. Breath Noise.Main.96"
+---| "samples.123. Seashore.Main.60"
+---| "samples.124. Bird Tweet.Main.72"
+---| "samples.124. Bird Tweet.Sustain.72"
+---| "samples.125. Telephone Ring.Sustain.68"
+---| "samples.126. Helicopter.Main.62"
+---| "samples.126. Helicopter.Sustain.62"
+---| "samples.127. Applause.Main.69"
+---| "samples.127. Applause.Sustain.69"
+---| "samples.128. Gunshot.Main.78"
+---| "samples.129. Percussion.Main.26"
+---| "samples.129. Percussion.Main.27"
+---| "samples.129. Percussion.Main.28"
+---| "samples.129. Percussion.Main.29"
+---| "samples.129. Percussion.Main.30"
+---| "samples.129. Percussion.Main.31"
+---| "samples.129. Percussion.Main.32"
+---| "samples.129. Percussion.Main.33"
+---| "samples.129. Percussion.Main.34"
+---| "samples.129. Percussion.Main.35"
+---| "samples.129. Percussion.Main.36"
+---| "samples.129. Percussion.Main.37"
+---| "samples.129. Percussion.Main.38"
+---| "samples.129. Percussion.Main.39"
+---| "samples.129. Percussion.Main.40"
+---| "samples.129. Percussion.Main.41"
+---| "samples.129. Percussion.Main.42"
+---| "samples.129. Percussion.Main.43"
+---| "samples.129. Percussion.Main.44"
+---| "samples.129. Percussion.Main.45"
+---| "samples.129. Percussion.Main.46"
+---| "samples.129. Percussion.Main.47"
+---| "samples.129. Percussion.Main.48"
+---| "samples.129. Percussion.Main.49"
+---| "samples.129. Percussion.Main.50"
+---| "samples.129. Percussion.Main.51"
+---| "samples.129. Percussion.Main.52"
+---| "samples.129. Percussion.Main.53"
+---| "samples.129. Percussion.Main.54"
+---| "samples.129. Percussion.Main.55"
+---| "samples.129. Percussion.Main.56"
+---| "samples.129. Percussion.Main.57"
+---| "samples.129. Percussion.Main.58"
+---| "samples.129. Percussion.Main.59"
+---| "samples.129. Percussion.Main.60"
+---| "samples.129. Percussion.Main.61"
+---| "samples.129. Percussion.Main.62"
+---| "samples.129. Percussion.Main.63"
+---| "samples.129. Percussion.Main.64"
+---| "samples.129. Percussion.Main.65"
+---| "samples.129. Percussion.Main.66"
+---| "samples.129. Percussion.Main.67"
+---| "samples.129. Percussion.Main.68"
+---| "samples.129. Percussion.Main.69"
+---| "samples.129. Percussion.Main.70"
+---| "samples.129. Percussion.Main.71"
+---| "samples.129. Percussion.Main.72"
+---| "samples.129. Percussion.Main.73"
+---| "samples.129. Percussion.Main.74"
+---| "samples.129. Percussion.Main.75"
+---| "samples.129. Percussion.Main.76"
+---| "samples.129. Percussion.Main.77"
+---| "samples.129. Percussion.Main.78"
+---| "samples.129. Percussion.Main.79"
+---| "samples.129. Percussion.Main.80"
+---| "samples.129. Percussion.Main.81"
+---| "samples.129. Percussion.Main.82"
+---| "samples.129. Percussion.Main.83"
+---| "samples.129. Percussion.Main.84"
+---| "samples.129. Percussion.Main.85"
 ---| "samples.129. Percussion.Main.86"
 
 ---@alias ChloesMidiPlayer.State
@@ -878,11 +878,13 @@ Class map:
 ---@field shouldKeepAliveClock integer
 ---@field shouldKillInstance ChloesMidiPlayer.shouldKillInstance.Function?
 ---@field songs table<ChloesMidiPlayer.SongID, ChloesMidiPlayer.Song>
----@field tracks table
----@field channels table
+---@field tracks table<ChloesMidiPlayer.TrackID, table<ChloesMidiPlayer.Pitch, ChloesMidiPlayer.Note>>
+---@field channels table<ChloesMidiPlayer.ChannelID, ChloesMidiPlayer.Channel>
 
----@alias ChloesMidiPlayer.onMidiEvent.Function fun(instance: ChloesMidiPlayer.Instance, midiEventData: ChloesMidiPlayer.Event, activeTrack: ChloesMidiPlayer.Track, trackID: integer, activeSong: ChloesMidiPlayer.Song) # TODO Double check
----@alias ChloesMidiPlayer.shouldKillInstance.Function fun(): boolean? # TODO Double check
+---@alias ChloesMidiPlayer.onMidiEvent.Function fun(instance: ChloesMidiPlayer.Instance, midiEventData: ChloesMidiPlayer.MidiEvent, activeTrack: ChloesMidiPlayer.Track, trackID: ChloesMidiPlayer.TrackID, activeSong: ChloesMidiPlayer.Song)
+---@alias ChloesMidiPlayer.shouldKillInstance.Function fun(): boolean?
+
+---@alias ChloesMidiPlayer.Pitch integer
 
 --#ENDREGION -----------------------------------------------------------------------------------
 --#REGION ˚♡ ChloesMidiPlayer > Song ♡˚
@@ -910,19 +912,17 @@ Class map:
 ---@field instance ChloesMidiPlayer.Instance
 ---@field tracks table
 ---@field bakedQuarterNotes table
----@field ticksPerQuarterNote integer?
----@field parseProject nil
+---@field ticksPerQuarterNote integer
 ---@field state ChloesMidiPlayer.State
 ---@field loopState boolean
 ---@field loaded boolean
 ---@field isLoading boolean
 ---@field loadProgress number
----@field post nil
----@field speed unknown
+---@field speed number
 ---@field tempo integer
 ---@field activeTrack integer
----@field clock unknown
----@field lengthQuarterNotes unknown
+---@field clock integer
+---@field lengthQuarterNotes integer
 ---@field rawSong string
 ---@field time number?
 ---@field length number?
@@ -957,14 +957,14 @@ Class map:
 ------------------------------------------------------------------------------------------------
 
 ---@class ChloesMidiAPI.Note
----@field play fun(self: self, instance: ChloesMidiPlayer.Instance, pitch, velocity, channelID, trackID, sysTime, pos): ChloesMidiPlayer.Note
+---@field play fun(self: self, instance: ChloesMidiPlayer.Instance, pitch: ChloesMidiPlayer.Pitch, velocity: number, channel: ChloesMidiPlayer.ChannelID, track: ChloesMidiPlayer.TrackID, sysTime: integer, pos: Vector3?): ChloesMidiPlayer.Note
 
 ---@class ChloesMidiPlayer.Note
 ---@field sustain fun(self: self): self
 ---@field release fun(self: self, systemTime: integer): ChloesMidiPlayer.Note
 ---@field stop fun(self: self)
 ---@field track integer
----@field pitch integer
+---@field pitch ChloesMidiPlayer.Pitch
 ---@field soundPitch number
 ---@field instrument table
 ---@field instance ChloesMidiPlayer.Instance
@@ -974,11 +974,41 @@ Class map:
 ---@field state ChloesMidiPlayer.State
 ---@field channel ChloesMidiPlayer.ChannelID
 ---@field sound Sound
----@field pos Vector3
+---@field pos Vector3?
 
----@class ChloesMidiPlayer.Event
+---@class ChloesMidiPlayer.MidiEvent
+---@field type ChloesMidiPlayer.MidiEventType
+---@field key integer
+---@field channel integer
 ---@field deltaTime number
----@field type string
+---@field velocity number
+
+---@alias ChloesMidiPlayer.MidiEventType
+---| "sequenceNumber" `0x00` - Meta Event
+---| "textEvent" `0x01` - Meta Event
+---| "copyrightNotice" `0x02` - Meta Event
+---| "sequenceOrTrackName" `0x03` - Meta Event
+---| "instrumentName" `0x04` - Meta Event
+---| "lyric" `0x05` - Meta Event
+---| "marker" `0x06` - Meta Event
+---| "cuePoint" `0x07` - Meta Event
+---| "midiChannelPrefix" `0x20` - Meta Event
+---| "endOfTrack"  `0x2F` - Meta Event
+---| "setTempo" `0x51` - Meta Event
+---| "smtpeOffset" `0x54` - Meta Event
+---| "timeSignature" `0x58` - Meta Event
+---| "keySignature" `0x59` - Meta Event
+---| "sequencerSpecificMetaEvent" `0x7F` - Meta Event
+---| "midPort" `0x21` - Meta Event
+---| "noteOff" `0x8` - Voice Message
+---| "noteOn" `0x9` - Voice Message
+---| "polyphonicKeyPressure" `0xA` - Voice Message
+---| "controllerChange" `0xB` - Voice Message
+---| "programChange" `0xC` - Voice Message
+---| "channelKeyPressure" `0xD` - Voice Message
+---| "pitchBend" `0xE` - Voice Message
+---| "sysEx" `0xF0` - Sysex Event
+---| "sysExEscape" `0xF7` - Sysex Event
 
 --#ENDREGION -----------------------------------------------------------------------------------
 --#REGION ˚♡ ChloesMidiPlayer > Track ♡˚
@@ -993,7 +1023,7 @@ Class map:
 ---@field eventStartPos integer?
 ---@field length integer?
 
----@alias ChloesMidiPlayer.TrackID string
+---@alias ChloesMidiPlayer.TrackID integer
 
 --#ENDREGION
 
