@@ -129,7 +129,7 @@ midiParser.metaEvents = {
     end,
     [0x54] = function(buffer,currentTrack,deltaTime,eventLength)
         table.insert(currentTrack.sequence,{
-            type = "smtpeOffset",
+            type = "smpteOffset",
             deltaTime = deltaTime,
             hours = buffer:read(),
             minutes = buffer:read(),
