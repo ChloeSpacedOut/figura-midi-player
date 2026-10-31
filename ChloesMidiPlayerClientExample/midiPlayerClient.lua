@@ -813,7 +813,7 @@ function midiPlayer.getMidiData(directory)
         local suffix = fileName:sub(-4,-1)
         local name = fileName:sub(1,-5)
 
-        local isMidiExt = (function() return suffix:lower() == ".mid" or suffix:lower() == ".midi" end)()
+        local isMidiExt = (suffix:lower() == ".mid" or suffix:lower() == ".midi")
         if name:sub(1,1) ~= "." then
             if not path:find("%.[^.]-$") then
                 midiPlayer.directories[path] = midiPlayer.directory:new(path,fileName,directory)
