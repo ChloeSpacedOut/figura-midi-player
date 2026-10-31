@@ -371,7 +371,7 @@ function midiParser.updateParser(instance)
                     project.currentTrack.length = buffer:readInt()
                     project.currentTrack.eventStartPos = buffer:getPosition()
                 else
-                    local warn = "Failed reading track header at position " .. string.format("%X", buffer:getPosition()) .. " with value " .. trackHeader
+                    local warn = "Failed reading track header at position " .. ("%X"):format(buffer:getPosition()) .. " with value " .. trackHeader
                     table.insert(project.warns, warn)
                 end
             end
@@ -406,7 +406,7 @@ function midiParser.updateParser(instance)
                                 buffer:setPosition(buffer:getPosition() - 1)
                                 midiParser.voiceMessages[project.lastStatusBits](buffer, project.currentTrack, deltaTime,project.lastChannel)
                             else
-                                local warn = "Failed reading byte " .. string.format("%X", buffer:getPosition() - 1) .. " with value " .. string.format("%X", nextByte)
+                                local warn = "Failed reading byte " .. ("%X"):format(buffer:getPosition() - 1) .. " with value " .. ("%X"):format(nextByte)
                                 table.insert(project.warns, warn)
                             end
                         end

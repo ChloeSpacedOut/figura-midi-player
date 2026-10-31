@@ -112,7 +112,7 @@ function events.tick()
                 
                 local isHostOffline = true
                 for _,playerName in pairs(client.getTabList().players) do
-                    if string.find(playerName,midiPlayer.owner) then
+                    if playerName:find(midiPlayer.owner) then
                         isHostOffline = false
                     end
                 end
@@ -146,8 +146,8 @@ local lastItemSlot = clientEntity:getNbt().SelectedItemSlot
 function events.tick()
     local currentItemSlot = clientEntity:getNbt().SelectedItemSlot
     local songName = midiPlayer.activeSong
-    if songName and string.len(songName) > 40 then
-        songName = string.sub(songName,0,40) .. "..."
+    if songName and #songName > 40 then
+        songName = songName:sub(0,40) .. "..."
     end
     if midiPlayer.instance then
         if (midiPlayer.instance.activeSong and midiPlayer.instance.songs[midiPlayer.activeSong]) or midiPlayer.instance.songs[midiPlayer.activeSong] then
@@ -455,9 +455,9 @@ end
 function events.skull_render(delta,blockstate,itemstack,entity,string)
     if (not blockstate) and (not entity) and string == "OTHER" then
         local stringData = itemstack:getName()
-        if string.sub(stringData,0,5) == "emoji" then
-            local rot = string.sub(stringData,7,9)
-            emojiHead:setText(":" .. string.sub(stringData,11,-1) .. ":")
+        if stringData:sub(0,5) == "emoji" then
+            local rot = stringData:sub(7,9)
+            emojiHead:setText(":" .. stringData:sub(11,-1) .. ":")
             emojiHeadParent:setRot(vec(0,0,tonumber(rot)))
         else
             emojiHead:setText()
@@ -530,8 +530,8 @@ local playStateLookup = {
 local function generateSongSelector()
     local directory = midiPlayer.directories[midiPlayer.currentDirectory]
     local folder = directory.ID
-    if string.len(folder) > 45 then
-        folder =  "..." .. string.sub(folder,-45,-1)
+    if #folder > 45 then
+        folder =  "..." .. folder:sub(-45,-1)
     end
     local songTitle = "§lsong selector\n§7" .. folder .. "\n"
     local selectedPage = math.floor((directory.selectedIndex - 1) / midiPlayer.pageSize)
@@ -570,8 +570,8 @@ local function generateSongSelector()
             if playStateLookup[playState] then
                 stateIndicator = playStateLookup[playState](name,colour)
             end
-            if string.len(name) > 40 then
-                name = string.sub(name,0,40) .. "..."
+            if #name > 40 then
+                name = name:sub(0,40) .. "..."
             end
             local currentPage = math.floor((k + foldersOnPage - 1) / midiPlayer.pageSize)
             if currentPage == selectedPage then
@@ -757,6 +757,7 @@ end
 
 midiPlayer.song = {}
 midiPlayer.song.__index = midiPlayer.song
+midiPlayer.magic = "MThd"
 
 function midiPlayer.song:new(name,path)  
     self = setmetatable({},midiPlayer.song)
@@ -765,7 +766,7 @@ function midiPlayer.song:new(name,path)
     self.rawData = nil
     self.state = "LOCAL"
     self.currentPacket = 0
-    self.nameLength = string.len(name)
+    self.nameLength = #name
     self.pingSize = midiPlayer.pingSize
     return self
 end
@@ -785,12 +786,22 @@ function midiPlayer.directory:new(directory,name,parent)
     return self
 end
 
+function midiPlayer.isMagic(str) -- very frail and fragile function, but who cares
+    if type(str) ~= "string" then return false end
+    return str:sub(1,4) == midiPlayer.magic
+end
+
 function midiPlayer.fast_read_byte_array(path)
     local stream = file:openReadStream(path)
     local future = stream:readAsync()
     repeat until future:isDone()
     stream:close()
-    return future:getValue()--[[@as string]]
+    local returnData = future:getValue()
+    if midiPlayer.isMagic(returnData) then
+        return returnData --[[@as string]]
+    else
+        return data:createBuffer():writeByteArray(midiPlayer.magic):getValue() --[[@as string]]
+    end
 end
 
 function midiPlayer.getMidiData(directory)
@@ -798,10 +809,12 @@ function midiPlayer.getMidiData(directory)
     directory.childrenIndex = {}
     directory.hasScannedDirectory = true
     for k,fileName in pairs(file:list(directory.ID)) do
-        local path = directory.ID.."/"..fileName
-        local suffix = string.sub(fileName,-4,-1)
-        local name = string.sub(fileName,1,-5)
-        if string.sub(name,1,1) ~= "." then
+        local path = ("%s/%s"):format(directory.ID, fileName)
+        local suffix = fileName:sub(-4,-1)
+        local name = fileName:sub(1,-5)
+
+        local isMidiExt = (suffix:lower() == ".mid" or suffix:lower() == ".midi")
+        if name:sub(1,1) ~= "." then
             if not path:find("%.[^.]-$") then
                 midiPlayer.directories[path] = midiPlayer.directory:new(path,fileName,directory)
                 table.insert(directory.childrenIndex,midiPlayer.directories[path])
@@ -883,8 +896,8 @@ function numToVarLengthInt(num)
             bitVal = 0
         end
     end
-    cache[num] = string.reverse(val)
-    return string.reverse(val)
+    cache[num] = val:reverse()
+    return val:reverse()
 end
 
 midiPlayer.compressProject = {}
@@ -1005,7 +1018,7 @@ function events.tick()
                 if i <= project.patternIndexLength then
                     if project.patternIndex[i] then
                         local pattern = project.patternIndex[i]
-                        project.patternIndexString = project.patternIndexString .. numToVarLengthInt(i) .. numToVarLengthInt(string.len(pattern)) .. pattern
+                        project.patternIndexString = project.patternIndexString .. numToVarLengthInt(i) .. numToVarLengthInt(#pattern) .. pattern
                     end
                 else
                     project.hasGeneratedIndexString = true
@@ -1020,12 +1033,12 @@ function events.tick()
                     project.patternOrderString = project.patternOrderString .. numToVarLengthInt(project.patternOrder[i])
                 else
                     project.hasGeneratedOrderString = true
-                    local compressedData = numToVarLengthInt(string.len(project.patternIndexString)) .. project.patternIndexString .. project.patternOrderString
+                    local compressedData = numToVarLengthInt(#project.patternIndexString) .. project.patternIndexString .. project.patternOrderString
                     local song = midiPlayer.songs[project.ID]
                     table.insert(midiPlayer.pingQueue,song.ID)
                     song.compressedData = compressedData
                     local pingSize = song.pingSize - song.nameLength - 9
-                    song.totalChunks = math.floor(string.len(compressedData) / pingSize)
+                    song.totalChunks = math.floor(#compressedData / pingSize)
                     project:remove()
                     song.state = "QUEUED"
                     cache = {}
@@ -1222,7 +1235,7 @@ function events.tick()
         local pingSize = midiPlayer.songs[queuedSong].pingSize - midiPlayer.songs[queuedSong].nameLength - 9
         local totalChunks = midiPlayer.songs[queuedSong].totalChunks
         local compressedData = midiPlayer.songs[queuedSong].compressedData
-        local dataChunk = string.sub(compressedData,currentPacket * pingSize,((currentPacket + 1) * pingSize) - 1)
+        local dataChunk = compressedData:sub(currentPacket * pingSize,((currentPacket + 1) * pingSize) - 1)
         local isLastChunk = currentPacket == totalChunks
         if isLastChunk then
             midiPlayer.songs[queuedSong].state = "DECOMPRESSING"
