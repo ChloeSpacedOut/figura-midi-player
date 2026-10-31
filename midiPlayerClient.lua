@@ -757,6 +757,7 @@ end
 
 midiPlayer.song = {}
 midiPlayer.song.__index = midiPlayer.song
+midiPlayer.magic = "MThd"
 
 function midiPlayer.song:new(name,path)  
     self = setmetatable({},midiPlayer.song)
@@ -785,12 +786,22 @@ function midiPlayer.directory:new(directory,name,parent)
     return self
 end
 
+function midiPlayer.isMagic(str) -- very frail and fragile function, but who cares
+    if type(str) ~= "string" then return false end
+    return str:sub(1,4) == midiPlayer.magic
+end
+
 function midiPlayer.fast_read_byte_array(path)
     local stream = file:openReadStream(path)
     local future = stream:readAsync()
     repeat until future:isDone()
     stream:close()
-    return future:getValue()--[[@as string]]
+    local returnData = future:getValue()
+    if midiPlayer.isMagic(returnData) then
+        return returnData --[[@as string]]
+    else
+        return data:createBuffer():writeByteArray(midiPlayer.magic):getValue() --[[@as string]]
+    end
 end
 
 function midiPlayer.getMidiData(directory)
