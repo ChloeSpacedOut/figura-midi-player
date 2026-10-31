@@ -149,10 +149,10 @@ soundfont.redundancyNames = {
 
 -- generate soundTree
 for _,soundString in pairs(sounds:getCustomSounds()) do
-    if string.sub(soundString,1,7) == "samples" then
+    if soundString:sub(1,7) == "samples" then
         local index,type,note
         local depth = 1
-        for string in string.gmatch(soundString,"([^.]*)") do
+        for string in soundString:gmatch("([^.]*)") do
             if depth == 2 then
                 index = string
             elseif depth == 4 then
@@ -163,8 +163,8 @@ for _,soundString in pairs(sounds:getCustomSounds()) do
             depth = depth + 1
         end
         if note and (type == "Sustain" or type == "Main") then
-            local templateString = string.match(soundString, "(.*)%.[^%.]+$")
-            templateString = string.match(templateString, "(.*)%.[^%.]+$") .. "."
+            local templateString = soundString:match("(.*)%.[^%.]+$")
+            templateString = templateString:match("(.*)%.[^%.]+$") .. "."
             if not soundfont.soundTree[tonumber(index)] then
                 soundfont.soundTree[tonumber(index)] = {}
             end
